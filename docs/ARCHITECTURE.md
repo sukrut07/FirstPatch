@@ -122,3 +122,14 @@ Pattern-matched, evidence-backed diagnostic analyzer with strict safety guarante
   6. Pytest collection & fixture failures.
   7. Filesystem permission errors (`EACCES`, `PermissionError`).
 - **Structured Findings**: Every finding includes `likely_cause`, `supporting_evidence`, `safe_diagnostic_steps`, `suggested_fix`, `verification_steps`, and `confidence`.
+
+## Isolated Test Execution & Contribution Verification (Phase 3)
+
+Independent service providing genuine, sandboxed test verification:
+- **Sandbox Architecture**: Dispatches allowlisted test targets to hardened container runtimes (`--network none`, `--user 1000:1000`, `--read-only`, tmpfs, bounded CPU/RAM/PIDs).
+- **Zero Host Execution**: Never runs untrusted code on the host OS. Reports `UNAVAILABLE` if container runtime is not safely reachable.
+- **Verification Records & Lifecycle**: Tracks 10 states (`QUEUED`, `PREPARING`, `RUNNING`, `PASSED`, `FAILED`, `TIMED_OUT`, `BLOCKED`, `UNSUPPORTED`, `UNAVAILABLE`, `CANCELLED`).
+- **Commit SHA Evidence Binding**: Links test records directly to repository snapshot commit SHAs. Stale commit execution is detected and rejected by the Reality Checker.
+- **Accurate Output Parsing**: Pytest and Jest test output parsers extract actual test counts without fabrication.
+- **Bounded Resource Limits**: Max 50KB stdout/stderr bounding, 45-120s timeout enforcement, and unconditional disposable workspace cleanup.
+

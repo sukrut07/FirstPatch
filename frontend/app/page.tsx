@@ -29,6 +29,7 @@ import {
   ExternalLink,
   IssueLabel,
 } from "@/components/ui";
+import { VerificationPanel } from "@/components/VerificationPanel";
 
 // ---------------------------------------------------------------------------
 // View State Machine
@@ -455,6 +456,9 @@ function OverviewView({
         </div>
       )}
 
+      {/* Isolated Verification */}
+      <VerificationPanel repo={repo} />
+
       <button id="btn-go-issues" onClick={onGoIssues} className="btn-primary w-full justify-center py-3">
         <IconSearch />
         Find Issues to Contribute
@@ -660,10 +664,12 @@ function IssueCard({ matched, onClick }: { matched: MatchedIssue; onClick: () =>
 // ---------------------------------------------------------------------------
 function PlanView({
   plan,
+  repo,
   loading,
   error,
 }: {
   plan: ContributionPlan | null;
+  repo: RepositoryOverview | null;
   loading: boolean;
   error: string | null;
 }) {
@@ -796,6 +802,9 @@ function PlanView({
           </div>
         </div>
       )}
+
+      {/* Isolated Test Verification */}
+      {repo && <VerificationPanel repo={repo} plan={plan} />}
     </div>
   );
 }
@@ -993,7 +1002,7 @@ export default function App() {
         {view === "home"     && <HomeView onAnalyze={handleAnalyze} />}
         {view === "overview" && <OverviewView repo={repoOverview} loading={repoLoading} error={repoError} onGoIssues={handleGoIssues} />}
         {view === "issues"   && <IssuesView issues={issues} loading={issuesLoading} error={issuesError} onSelectIssue={handleSelectIssue} owner={repoOverview?.identity.owner ?? ""} repo={repoOverview?.identity.repo ?? ""} />}
-        {view === "plan"     && <PlanView plan={plan} loading={planLoading} error={planError} />}
+        {view === "plan"     && <PlanView plan={plan} repo={repoOverview} loading={planLoading} error={planError} />}
         {view === "settings" && <SettingsView health={health} healthLoading={healthLoading} />}
       </div>
       <footer className="border-t border-white/[0.04] py-4 text-center text-xs text-gray-700">

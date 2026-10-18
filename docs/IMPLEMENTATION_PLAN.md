@@ -32,36 +32,29 @@
 
 ---
 
-## Phase 2: Sandboxed Verification & PR Automation (Next)
+## Phase 3: Isolated Test Execution & Contribution Verification (Completed)
 
-### High Priority
-1. **Isolated Sandboxed Test Execution**
-   - Docker container execution with bounded CPU, memory, timeout, and read-only source mounts.
-   - Capture test execution stdout/stderr safely to verify proposed bug fixes.
-
-2. **Database Caching with TTL & Freshness Detection**
-   - Wire `RepositoryCache` and `IssueCache` ORM models to live requests.
-   - Detect stale cache when `commit_sha` advances on the remote repository.
-
-3. **Interactive Contributor Flight Recorder**
-   - Step-by-step progress checklist in frontend UI.
-   - Record time spent and concepts learned.
-
-### Medium Priority
-4. **Pull Request Preparation Assistant**
-   - Interactive PR template generator linking fixed issue numbers.
-   - Git diff preview and commit message linting.
-
-5. **Multi-language Semantic Vector Search**
-   - Embeddings for large codebase semantic navigation when repository exceeds bounded file limits.
+| Component | Status | Notes |
+|---|---|---|
+| **Independent Verification Service** | ✅ Done | `IsolatedVerificationService` with async semaphore concurrency limiter (max 3) |
+| **Strict Security Boundaries** | ✅ Done | Non-root (`1000:1000`), `--network none`, `--read-only`, tmpfs `/tmp`, CPU/RAM/PID limits, `--cap-drop ALL`, no socket mounts |
+| **Zero Host Execution Rule** | ✅ Done | Prohibits host fallback; reports `UNAVAILABLE` when safe container infrastructure is absent |
+| **Verification State Machine** | ✅ Done | 10 explicit states (`QUEUED`, `PREPARING`, `RUNNING`, `PASSED`, `FAILED`, `TIMED_OUT`, `BLOCKED`, `UNSUPPORTED`, `UNAVAILABLE`, `CANCELLED`) |
+| **Commit SHA Evidence Binding** | ✅ Done | Verified records bound to snapshot commit SHA; stale commit detection via `VerificationRealityAdapter` |
+| **Allowlisted Project Types** | ✅ Done | Python (`python_pytest` via `python:3.11-slim`), Node.js/TypeScript (`node_jest` / `node_npm_test` via `node:20-slim`) |
+| **Accurate Output Parsers** | ✅ Done | `PytestOutputParser` and `JestNpmOutputParser` extracting exact test counts without fabrication |
+| **Bounded Logs & Cleanup** | ✅ Done | Stdout/stderr capped at 50KB; unconditional workspace and container cleanup in `finally` blocks |
+| **API Endpoints** | ✅ Done | `/api/verification/health`, `/api/verification/run`, `/api/verification/runs/{run_id}`, `/api/verification/runs/{run_id}/cancel`, `/api/verification/{session_id}` |
+| **Frontend UI Panel** | ✅ Done | `VerificationPanel` embedded in Overview and Plan views with live status, counts, bounded logs, and diagnostics |
 
 ---
 
 ## Verified Test & Build Results
 
 ```
-Backend pytest:  67 passed in 1.02s (100% pass rate)
+Backend pytest:  143 passed, 0 failed in 1.28s (100% pass rate across Phases 0, 1, 2, 3)
 Frontend lint:   0 warnings, 0 errors
-TypeScript:      npx tsc --noEmit clean (0 errors)
-Next.js build:   npm run build clean (compiled successfully)
+TypeScript:      next build clean (0 type errors)
+Next.js build:   npm run build clean (compiled successfully, 5/5 static pages)
 ```
+

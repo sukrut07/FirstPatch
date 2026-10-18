@@ -128,6 +128,38 @@ Without these controls, executing arbitrary repository code could:
 
 ---
 
+## Isolated Test Execution Security Boundaries (Phase 3)
+
+Phase 3 introduces an isolated verification service designed to execute supported test suites in hardened Linux containers with multi-layered defenses:
+
+### 1. Hardened Container Isolation Controls
+- **Non-Root Execution**: Container processes run as unprivileged user (`--user 1000:1000`).
+- **Read-Only Filesystems**: The root container filesystem is mounted `--read-only`.
+- **Read-Only Source Volume**: Repository files are mounted read-only (`:ro`) into `/workspace`.
+- **Network Blackhole**: Test execution containers are run with `--network none` by default. Outbound network access, external dependency fetches, and reverse shells are prevented.
+- **Resource Constraints**: Strict ceilings prevent host DoS:
+  - CPU: `--cpus 1.0`
+  - Memory: `--memory 512m`
+  - PID Table: `--pids-limit 100`
+  - Wall-clock timeout: default 45s, maximum 120s
+  - Output bounding: stdout and stderr truncated at 50KB maximum
+- **Capability Drops**: Complete capability stripping (`--cap-drop ALL`, `--security-opt no-new-privileges:true`). Privileged mode is prohibited.
+- **Strict Allowlisting**: Only vetted, prebuilt runtime images are permitted (`python:3.11-slim`, `node:20-slim`). Arbitrary user-specified images, entry points, or mounts are rejected.
+- **Zero Host Execution Fallback**: If a safe container environment is unavailable, the service reports status `UNAVAILABLE` rather than falling back to host execution.
+- **Zero Secrets / Sockets Mounted**: Neither `/var/run/docker.sock`, application environment variables, nor API tokens are ever mounted into execution sandboxes.
+
+### 2. Residual Security Risks & Operational Requirements
+> [!WARNING]
+> **Container Sandboxing Residual Risks**:
+> Container virtualization shares the host operating system kernel. While Docker with capability stripping and network isolation mitigates the vast majority of threats, it does NOT provide absolute isolation against zero-day Linux kernel vulnerabilities or hardware microarchitectural exploits (e.g. Spectre/Meltdown variants).
+>
+> **Operational Best Practices for Production Multi-Tenancy**:
+> 1. Run execution workers on dedicated, ephemeral virtual machines that are destroyed after a bounded number of runs.
+> 2. Use hardware-virtualized microVM runtimes (such as AWS Firecracker, Kata Containers, or Google gVisor) instead of raw runc containers for untrusted public repositories.
+> 3. Employ an independent host intrusion detection system (HIDS) to monitor worker nodes for anomalous syscalls.
+
+---
+
 ## Agent Tool Security Boundaries
 
 The FirstPatch AI Agent operates under strict, verifiable security constraints:
@@ -139,11 +171,12 @@ The FirstPatch AI Agent operates under strict, verifiable security constraints:
 
 ---
 
-## Known Limitations (Phase 1)
+## Known Limitations
 
-1. **No test execution sandbox** — tests must be run locally by the user.
+1. **Test execution requires container infrastructure** — if Docker or container runtime is missing, the service honestly reports `UNAVAILABLE` and prevents unverified claims.
 2. **File analysis is bounded** — large repositories with many files will have partial analysis (the tree is bounded to top-level and issue-referenced candidates).
 3. **AST extraction language support** — full AST parsing is supported for Python. JavaScript/TypeScript, Go, and Rust use structural regex heuristics with explicit limitation disclosures.
 4. **AI responses are grounded but require verification** — model outputs are checked by the Repository Reality Checker, but beginners are encouraged to inspect files directly.
 5. **Rate limiting relies on GitHub's enforcement** — unauthenticated requests are limited to 60/hour. Provide a `GITHUB_TOKEN` in `.env` to increase to 5,000/hour.
+
 

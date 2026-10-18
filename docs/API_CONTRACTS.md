@@ -332,36 +332,93 @@ Explicitly validates a contribution plan against repository reality using the Re
 
 ---
 
-## Verification
+## Verification (Phase 3)
 
-### `GET /api/verification/{session_id}`
+### `GET /api/verification/health`
 
-Returns verification status for a contribution session.
+Returns availability and sandboxing capability of the container infrastructure.
 
 **Response 200:**
 ```json
 {
-  "session_id": "uuid",
-  "owner": "unknown",
-  "repo": "unknown",
-  "checks": [
-    {
-      "name": "test_suite",
-      "description": "Run the project's test suite to verify the fix",
-      "status": "unavailable",
-      "result_detail": "Test execution requires an isolated environment and is not available in Phase 0."
-    },
-    {
-      "name": "contribution_checklist",
-      "description": "Basic contribution readiness checklist",
-      "status": "not_run",
-      "result_detail": "Items to check manually: ..."
-    }
-  ],
-  "overall_ready": false,
-  "blockers": ["Test execution is not available in Phase 0..."],
-  "updated_at": "2024-10-18T07:00:00Z"
+  "runtime_available": true,
+  "runtime_name": "docker-daemon (24.0.7)",
+  "isolation_level": "hardened_linux_container",
+  "supported_profiles": ["python_pytest", "node_jest", "node_npm_test"],
+  "message": "Hardened container runtime available.",
+  "host_execution_permitted": false
 }
 ```
 
-Check status values: `passed | failed | skipped | not_run | unavailable`
+---
+
+### `POST /api/verification/run`
+
+Submits an isolated verification job against an approved repository snapshot.
+
+**Request:**
+```json
+{
+  "owner": "pallets",
+  "repo": "flask",
+  "commit_sha": "a1b2c3d4e5f67890",
+  "runtime": "python_pytest",
+  "test_target": "tests/test_basic.py",
+  "timeout_seconds": 45,
+  "session_id": "00000000-0000-0000-0000-000000000000"
+}
+```
+
+**Response 202 (Accepted):**
+```json
+{
+  "run_id": "11111111-2222-3333-4444-555555555555",
+  "owner": "pallets",
+  "repo": "flask",
+  "commit_sha": "a1b2c3d4e5f67890",
+  "runtime": "python_pytest",
+  "test_target": "tests/test_basic.py",
+  "status": "passed",
+  "exit_code": 0,
+  "counts": {
+    "collected": 12,
+    "passed": 12,
+    "failed": 0,
+    "skipped": 0,
+    "errors": 0
+  },
+  "stdout": "============================= test session starts ==============================\ncollected 12 items\n...",
+  "stderr": "",
+  "error_summary": null,
+  "started_at": "2026-10-18T08:00:00Z",
+  "finished_at": "2026-10-18T08:00:05Z",
+  "duration_ms": 5120,
+  "cleanup_performed": true,
+  "cleanup_error": null,
+  "warnings": []
+}
+```
+
+---
+
+### `GET /api/verification/runs/{run_id}`
+
+Retrieves the execution status, test counts, and bounded logs (max 50KB) for a specific run.
+
+---
+
+### `POST /api/verification/runs/{run_id}/cancel`
+
+Cancels an active verification job.
+
+**Response 200:**
+```json
+{ "cancelled": true }
+```
+
+---
+
+### `GET /api/verification/{session_id}`
+
+Returns verification status and checklist for a contribution session, automatically binding real test runs.
+
