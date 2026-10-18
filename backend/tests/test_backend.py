@@ -138,3 +138,37 @@ def test_flight_recorder_and_pr_draft():
     assert draft["title"] == "fix: config"
     assert "Pull Request: fix: config" in draft["markdown"]
     assert "Maintainer Review Checklist" in draft["markdown"]
+
+@pytest.mark.asyncio
+async def test_benchmark_service(monkeypatch):
+    from backend.app.services.benchmark_service import benchmark_service, BENCHMARK_SUITE
+    from backend.app.services.ollama_service import ollama_service
+
+    async def mock_generate(prompt, model=None, temperature=0.1, format_json=False):
+        if format_json:
+            return {
+                "response": '{"root_cause": "KeyError", "files_to_modify": ["src/flask/config.py"], "learning_gap": "Exceptions", "recommended_test": "pytest tests/test_config.py"}',
+                "eval_count": 45,
+                "total_duration": 500000000
+            }
+        if "PROPOSED DIFF" in prompt:
+            return {
+                "response": "Found hardcoded auth credential and sensitive secret along with debug print statement.",
+                "eval_count": 30,
+                "total_duration": 300000000
+            }
+        return {
+            "response": "validate_session_token accepts token and max_age_seconds (default 3600), raising InvalidTokenError on line 15-32.",
+            "eval_count": 35,
+            "total_duration": 400000000
+        }
+
+    monkeypatch.setattr(ollama_service, "generate_response", mock_generate)
+    report = await benchmark_service.run_model_benchmark("gemma4:e2b")
+
+    assert report["model"] == "gemma4:e2b"
+    assert report["tests_run"] == len(BENCHMARK_SUITE)
+    assert report["tests_passed"] == len(BENCHMARK_SUITE)
+    assert report["pass_rate_percent"] == 100.0
+    assert report["average_tokens_per_sec"] > 0
+

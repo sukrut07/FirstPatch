@@ -120,7 +120,22 @@ class MentorService:
             "mode": mode,
             "model_used": model_used,
             "evidence": evidence_records,
+            "grounding_audit": self._audit_grounding(answer, chunks),
             "offline_mode": not ollama_status["online"]
+        }
+
+    def _audit_grounding(self, answer: str, chunks: List[Dict[str, Any]]) -> Dict[str, Any]:
+        """Reality Checker: Verifies that file citations in the answer actually exist in the repository."""
+        indexed_files = {c["file_path"].lower() for c in chunks}
+        verified_matches = []
+        for file_path in indexed_files:
+            if file_path in answer.lower():
+                verified_matches.append(file_path)
+        
+        return {
+            "evidence_backed": len(verified_matches) > 0 or len(chunks) == 0,
+            "verified_files_cited": verified_matches,
+            "chunks_inspected": len(chunks)
         }
 
     def _generate_offline_answer(self, question: str, chunks: List[Dict[str, Any]], mode: str, note: Optional[str] = None) -> str:

@@ -27,6 +27,11 @@ class Settings(BaseSettings):
     # GitHub API Configuration
     GITHUB_TOKEN: Optional[str] = None
     
+    # DigitalOcean Gradient™ AI Agentic Cloud Configuration
+    DO_GRADIENT_API_KEY: Optional[str] = None
+    DO_GRADIENT_WORKSPACE_ID: Optional[str] = None
+    AI_INFERENCE_PROVIDER: str = "ollama"  # 'ollama' or 'digitalocean_gradient'
+    
     # CORS
     CORS_ORIGINS: List[str] = [
         "http://localhost:3000",
