@@ -1,6 +1,14 @@
 import sys
 import os
 from contextlib import asynccontextmanager
+
+# Ensure workspace root and backend root are in sys.path
+backend_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+workspace_dir = os.path.dirname(backend_dir)
+for p in (workspace_dir, backend_dir):
+    if p not in sys.path:
+        sys.path.insert(0, p)
+
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from backend.app.config import settings
@@ -18,11 +26,6 @@ from backend.app.routers import (
     benchmark,
     compliance
 )
-
-# Ensure backend root is in sys.path for cross-module imports
-backend_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-if backend_dir not in sys.path:
-    sys.path.insert(0, backend_dir)
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
