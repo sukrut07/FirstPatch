@@ -171,12 +171,51 @@ The FirstPatch AI Agent operates under strict, verifiable security constraints:
 
 ---
 
-## Known Limitations
+## Phase 5 Trust Boundary Hardening & Adversarial Defenses
 
-1. **Test execution requires container infrastructure** — if Docker or container runtime is missing, the service honestly reports `UNAVAILABLE` and prevents unverified claims.
-2. **File analysis is bounded** — large repositories with many files will have partial analysis (the tree is bounded to top-level and issue-referenced candidates).
-3. **AST extraction language support** — full AST parsing is supported for Python. JavaScript/TypeScript, Go, and Rust use structural regex heuristics with explicit limitation disclosures.
-4. **AI responses are grounded but require verification** — model outputs are checked by the Repository Reality Checker, but beginners are encouraged to inspect files directly.
-5. **Rate limiting relies on GitHub's enforcement** — unauthenticated requests are limited to 60/hour. Provide a `GITHUB_TOKEN` in `.env` to increase to 5,000/hour.
+In Phase 5, FirstPatch AI was subjected to an end-to-end trust audit and adversarial security hardening:
+
+### 1. Cryptographic Verdict Sealing
+- **Threat**: Callers or model proposers crafting pre-fabricated `Verdict` objects with `status: VERIFIED` to bypass verification checks.
+- **Defense**: Every `Verdict` emitted by the deterministic `CheckerKernel` is stamped with an HMAC-SHA256 `kernel_seal`. The seal signs `status`, `reason_code`, `claim_hash`, `evidence_ids`, and `authoritative_sha`.
+- Any verdict deserialized without a valid seal or with modified payload yields `is_sealed_by_kernel() == False` and `CheckerKernel.is_verdict_authentic(...) == False`. Proposers have zero access to the secret key, rendering verdict forgery impossible.
+
+### 2. Multi-Tenant Execution Run Spoofing Mitigation
+- **Threat**: Supplying a legitimate `run_id` from Repository A or Commit B to validate a `VERIFY_RESULT` claim on Repository C or Commit D.
+- **Defense**: `check_verify_result` in `app/services/trust/checkers.py` strictly verifies `rec["repo_id"] == claim.repository` and `rec["commit_sha"] == authoritative_sha`. Cross-repository or cross-commit run reuse fails immediately to `REFUTED` (`VERIFY_RUN_REPO_MISMATCH` / `VERIFY_RUN_COMMIT_MISMATCH`).
+- In addition, runs claiming `EXECUTED_PASS` from `mock` or `static` drivers are rejected (`VERIFY_DRIVER_UNTRUSTED`).
+
+### 3. Strict Path Normalization & Windows DOS Device Protections
+- **Threat**: Traversal attacks using URL-encoded sequences (`%2e%2e%2f`), Windows legacy device names (`CON`, `PRN`, `AUX`, `NUL`, `COM1-9`), control characters, or trailing dots/spaces.
+- **Defense**: `FactStore.normalize_repo_path` executes URL unquoting, strips leading/trailing slashes, blocks ASCII control characters (< 32, 127), validates path segments against Windows reserved device names, and rejects trailing dots/spaces before SQLite fact storage or snapshot lookup.
+
+### 4. 25-Point Adversarial Security Regression Matrix
+Automated test suite `tests/test_phase5_adversarial_security.py` deterministically verifies 25 distinct security test vectors:
+1. Fabricated file path (`REFUTED: FILE_NOT_FOUND`)
+2. Fabricated symbol (`REFUTED: SYMBOL_NOT_FOUND`)
+3. Wrong commit SHA (`STALE: COMMIT_MISMATCH`)
+4. Path traversal attempt (`REFUTED: PATH_TRAVERSAL_DETECTED`)
+5. Absolute Windows drive path (`REFUTED: ABSOLUTE_PATH_REJECTED`)
+6. Null byte in file path (`REFUTED: PATH_VALIDATION_ERROR`)
+7. Invalid / inverted line range (`REFUTED: INVALID_LINE_RANGE`)
+8. Missing required claim argument (`UNKNOWN: MISSING_ARGUMENTS`)
+9. Unknown claim category (`UNKNOWN: UNKNOWN_CLAIM_TYPE`)
+10. Checker exception safety (`UNKNOWN: CHECKER_EXCEPTION`)
+11. Forged serialized verdict (`is_sealed_by_kernel() == False`)
+12. Mock driver claiming execution pass (`REFUTED: VERIFY_DRIVER_UNTRUSTED`)
+13. Static analysis mislabeled as execution (`REFUTED: VERIFY_DRIVER_UNTRUSTED`)
+14. Nonexistent verification run ID (`UNKNOWN: VERIFY_RUN_NOT_FOUND`)
+15. Execution record integrity mismatch (`REFUTED: VERIFY_INTEGRITY_MISMATCH`)
+16. Receipt event modified payload (`is_valid == False`)
+17. Receipt event altered previous hash (`is_valid == False`)
+18. Reordered receipt events (`is_valid == False`)
+19. Missing receipt event (`is_valid == False`)
+20. Prompt-injection embedded in repo file (isolated as untrusted)
+21. Malicious instructions in issue body (isolated as untrusted)
+22. Malicious instructions in PR review comments (isolated as untrusted)
+23. Secrets / API keys protection in logs and receipts
+24. Untrusted prose isolation in `TrustedRenderer`
+25. Stale evidence rejection after commit progression (`STALE`)
+
 
 

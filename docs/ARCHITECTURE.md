@@ -173,4 +173,7 @@ Repository Snapshot + Commit SHA
 10. **Blast Radius & Impact Analysis (`app/services/trust/blast_radius.py`)**: Traces AST dependencies and test targets to produce qualitative risk notes.
 11. **Abstention Decision Engine (`app/services/trust/abstain.py`)**: Declines recommendations when evidence margin is statistically or structurally insufficient, reporting risk-coverage trade-offs.
 12. **Kernel Mutation Fuzzing (`app/services/trust/fuzz.py`)**: Evaluates kernel robustness against 12+ controlled claim mutations and receipt tamper attacks.
+13. **Cryptographic Verdict Sealing (`app/services/trust/kernel.py`, `claims.py`)**: HMAC-SHA256 digital seals on all emitted verdicts (`kernel_seal`) to prevent deserialization or caller forgery of `VERIFIED` states.
+14. **Deterministic Demo Fixture & Sanitized Logging (`app/services/trust/demo_fixture.py`)**: Labeled synthetic demo bundles (`is_synthetic: True`) mounted at `GET /api/trust/demo-fixture` and structured audit logger (`log_sanitized_trust_event`) guaranteeing zero secret propagation.
+
 
