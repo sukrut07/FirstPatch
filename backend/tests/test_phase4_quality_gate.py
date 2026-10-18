@@ -529,7 +529,7 @@ class TestEndToEndBackendIntegration:
         ], 1))
         mock_github.get_file_content = AsyncMock(return_value="x = 1")
 
-        orchestrator = AgentOrchestrator(github=mock_github, ai_provider=DeterministicFallbackProvider())
+        orchestrator = FirstPatchAgentOrchestrator(github=mock_github, ai_provider=DeterministicFallbackProvider())
         res = await orchestrator.execute_plan_workflow(PlanRequest(owner="firstpatch", repo="demo", issue_number=1))
         # Commit SHA in snapshot matches current overview
         assert res.repository.commit_sha == "current_sha_12345"
