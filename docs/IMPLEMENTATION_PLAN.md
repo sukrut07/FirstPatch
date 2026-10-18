@@ -25,8 +25,10 @@
 | Issue explorer view | ✅ Done | Search, filter, criterion expansion |
 | Contribution plan view | ✅ Done | Steps, prerequisites, uncertainties |
 | Settings / health view | ✅ Done | Service status, AI config guidance |
-| Backend test suite | ✅ Done | 25+ tests covering key behaviors |
-| Documentation (README, ARCH, API, SECURITY, PLAN) | ✅ Done | |
+| Backend test suite | ✅ Done | 40 unit and integration tests (100% passing) |
+| Frontend compilation & lint | ✅ Done | TypeScript 0 errors, ESLint 0 errors, Next.js build clean |
+| Browser verification | ✅ Done | Full interactive flow verified via automated browser agent |
+| Documentation (README, ARCH, API, SECURITY, PLAN) | ✅ Done | Comprehensive documentation set |
 | .gitignore, .env.example | ✅ Done | |
 
 ### First Vertical Slice

@@ -8,15 +8,11 @@ import {
   type MatchedIssue,
   type ContributionPlan,
   type HealthResponse,
-  type DifficultyLevel,
-  type GitHubIssue,
 } from "@/lib/api";
 import {
   IconGitHub,
   IconSearch,
   IconSpinner,
-  IconCheck,
-  IconX,
   IconWarning,
   IconInfo,
   IconFolder,
@@ -429,7 +425,7 @@ function OverviewView({
             <p className="section-label">README Excerpt</p>
             <EvidenceBadge status="verified" />
           </div>
-          <p className="text-sm text-gray-400 leading-relaxed italic">"{repo.readme_summary}"</p>
+          <p className="text-sm text-gray-400 leading-relaxed italic">&ldquo;{repo.readme_summary}&rdquo;</p>
         </div>
       )}
 
@@ -599,19 +595,40 @@ function IssueCard({ matched, onClick }: { matched: MatchedIssue; onClick: () =>
       </button>
 
       {expanded && (
-        <div className="mt-3 space-y-1.5 animate-in">
-          {criteria.map((c) => (
-            <div key={c.name} className="flex items-start gap-2 text-xs">
-              <span className={`mt-0.5 shrink-0 ${c.passed ? "text-status-success" : "text-status-error"}`}>
-                {c.passed ? "✓" : "✗"}
-              </span>
-              <div className="flex-1">
-                <span className="text-gray-400">{c.explanation}</span>
-                {c.missing_data && <span className="ml-1 badge-warning text-[10px]">Missing data</span>}
-              </div>
-              <span className="text-gray-600 font-mono shrink-0">{Math.round(c.score * 100)}%</span>
+        <div className="mt-3 space-y-3 animate-in pt-2 border-t border-white/[0.04]">
+          {difficulty_explanation && (
+            <div className="text-xs text-gray-400">
+              <span className="font-semibold text-gray-300">Difficulty assessment: </span>
+              {difficulty_explanation}
             </div>
-          ))}
+          )}
+          {prerequisites.length > 0 && (
+            <div className="text-xs">
+              <span className="font-semibold text-gray-300">Prerequisites: </span>
+              <span className="text-gray-400">{prerequisites.join(", ")}</span>
+            </div>
+          )}
+          {risks.length > 0 && (
+            <div className="text-xs">
+              <span className="font-semibold text-amber-400/90">Risks / Watch out: </span>
+              <span className="text-gray-400">{risks.join(", ")}</span>
+            </div>
+          )}
+          <div className="space-y-1.5 pt-1">
+            <p className="text-[11px] font-semibold text-gray-400 uppercase tracking-wider">Criteria Breakdown</p>
+            {criteria.map((c) => (
+              <div key={c.name} className="flex items-start gap-2 text-xs">
+                <span className={`mt-0.5 shrink-0 ${c.passed ? "text-status-success" : "text-status-error"}`}>
+                  {c.passed ? "✓" : "✗"}
+                </span>
+                <div className="flex-1">
+                  <span className="text-gray-400">{c.explanation}</span>
+                  {c.missing_data && <span className="ml-1 badge-warning text-[10px]">Missing data</span>}
+                </div>
+                <span className="text-gray-600 font-mono shrink-0">{Math.round(c.score * 100)}%</span>
+              </div>
+            ))}
+          </div>
         </div>
       )}
 
