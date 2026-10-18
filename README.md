@@ -1,209 +1,184 @@
-# FirstPatch AI
+# 🚀 FirstPatch AI — Your Open-Source Mentor
 
-**Your Open-Source Mentor** — evidence-backed AI guidance for making your first meaningful contribution to an unfamiliar GitHub repository.
+> **"Contribute like you understand it, because you will."**  
+> *The Contribution Trust Layer for Open Source.*
 
----
-
-## What Is FirstPatch AI?
-
-FirstPatch AI helps beginner developers:
-
-1. Understand an unfamiliar repository's structure and technology stack
-2. Discover candidate open issues ranked by beginner-friendliness
-3. Receive a step-by-step contribution plan backed by real repository evidence
-4. Diagnose development setup problems
-5. Know exactly what has and hasn't been verified before submitting a PR
-
-It is **not** a generic chatbot. Every displayed fact is traced to a verifiable source. Uncertainties and missing information are shown explicitly, never fabricated.
+FirstPatch AI is a local-first, privacy-focused open-source contribution mentor. It guides beginners and students through exploring unfamiliar repositories, understanding complex architectures, identifying beginner-friendly issues, diagnosing environment setup errors, and verifying changes through real, sandboxed test runs before submitting maintainer-ready pull requests.
 
 ---
 
-## Features & Capabilities
+## 🌟 Why FirstPatch AI is Different
 
-| Feature | Status | Notes |
-|---|---|---|
-| Public GitHub repository analysis | ✅ Implemented | Metadata, commit SHA, languages, tree, README |
-| Evidence-backed repository overview | ✅ Implemented | Every fact tied to a verifiable EvidenceRef |
-| Python AST Code Extraction | ✅ Implemented | Classes, methods, functions, imports, decorators, line ranges |
-| Multi-language Structure Heuristics | ✅ Implemented | JS/TS, Go, Rust with explicit limitation disclosures |
-| 7-Criterion Issue Matching Engine | ✅ Implemented | Deterministic, transparent scoring |
-| Controlled Agent Orchestrator | ✅ Implemented | 8-stage pipeline coordinating Tools A through H |
-| Repository Reality Checker | ✅ Implemented | Fact-checks plans, eliminates hallucinated files & false claims |
-| Setup Failure Doctor | ✅ Implemented | Python, Node, venv, missing env, port conflict, pytest collection |
-| Gemma 4 AI Provider Adapter | ✅ Implemented | `gemma-4-31b-it` via Google AI Studio API & local Ollama |
-| Deterministic AI Fallback | ✅ Implemented | Full functionality preserved without AI credentials |
-| Comprehensive Test Suite | ✅ 67/67 Passing | Unit, integration, AST, AI provider, and reality checker tests |
-| Production Frontend Build | ✅ Verified | Next.js 14, TypeScript strict, 0 errors, 0 warnings |
-
-
----
-
-## Architecture
+Traditional developer tools either provide static issue lists (FirstIssue, Good First Issue) or blindly generate code without explanation (Copilot, Cursor). FirstPatch AI bridges the gap between **wanting to contribute** and **making a verified, educational contribution**:
 
 ```
-firstpatch-ai/
-  frontend/          Next.js 14 + TypeScript + Tailwind CSS
-  backend/           Python 3.11+ + FastAPI + Pydantic v2
-  docs/              Architecture, API contracts, security, implementation plan
-  .env.example       All required environment variable placeholders
+┌─────────────────────────────────────────────────────────────────────────────┐
+│                           FIRSTPATCH AI PIPELINE                            │
+├───────────────┬────────────────┬───────────────┬──────────────┬─────────────┤
+│ 1. REALITY    │ 2. DISCOVERY   │ 3. ENVIRONMENT│ 4. MENTORSHIP│ 5. FLIGHT   │
+│    CHECKER    │    & MATCHING  │    DOCTOR     │    & LEARNING│    RECORDER │
+└───────────────┴────────────────┴───────────────┴──────────────┴─────────────┘
 ```
 
-See [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) for full component diagram and data flow.
+1. **Proof-Carrying Contributions:** Distinguishes model-generated recommendations from independently checked facts with a four-verdict Reality Checker: `VERIFIED`, `REFUTED`, `STALE`, and `UNKNOWN`.
+2. **Deterministic Code Intelligence:** Uses native Python AST extraction and symbol table parsing. It never asks an LLM to hallucinate file paths or line bounds.
+3. **Multi-Dimensional Issue Fit:** Renders an interactive 5-dimensional radar geometry across Technical Fit, Interest Alignment, Evidence Depth, Solvability, and Learning Opportunities.
+4. **Setup Failure Doctor:** Diagnostic engine classifying build errors (`ModuleNotFoundError`, `ERESOLVE`, port collisions, missing `.env`) with safe, copyable fixes.
+5. **Human-in-the-Loop Triage:** Enforces a 6-step contributor triage and hypothesis log before code generation.
+6. **Contribution Flight Recorder:** Immutable append-only audit ledger recording every step, test execution, and finding into a truthful PR draft.
 
 ---
 
-## Prerequisites
+## 🏗️ Technical Architecture
 
-| Tool | Version | Required For |
-|---|---|---|
-| Python | 3.11+ | Backend |
-| Node.js | 18+ | Frontend |
-| npm | 9+ | Frontend dependencies |
-| Git | Any | Repository analysis |
-
-Optional:
-- A [GitHub Personal Access Token](https://github.com/settings/tokens) (increases API rate limit from 60 to 5000 requests/hour)
-- A [Google AI Studio API key](https://aistudio.google.com) (enables Gemma AI enrichment)
-- [Ollama](https://ollama.ai) (enables local Gemma inference)
+```
+                  ┌─────────────────────────────────────────┐
+                  │      Next.js 16 + React 19 Frontend     │
+                  │   - Recharts Diagrammatic AST Analysis  │
+                  │   - Custom API Key & Model Drawer       │
+                  │   - Socratic Learn vs. Copilot Modes    │
+                  └────────────────────┬────────────────────┘
+                                       │ HTTP / JSON
+                                       ▼
+                  ┌─────────────────────────────────────────┐
+                  │          FastAPI Backend Engine         │
+                  │         (Python 3.11+, Pydantic)        │
+                  │  - Routers: repositories, issues, mentor│
+                  │    contributions, verification, trust,  │
+                  │    compliance, learning, benchmark      │
+                  └─────────┬─────────────────────┬─────────┘
+                            │                     │
+              Deterministic │                     │ Grounded Context
+                 Extraction │                     ▼
+                            │        ┌─────────────────────────┐
+                            │        │   Local Ollama Engine   │
+                            │        │   (gemma4:e2b / gemma2) │
+                            │        │   (nomic-embed-text)    │
+                            │        │   + Cloud API Key router│
+                            ▼        └─────────────────────────┘
+        ┌───────────────────────────────────────┐
+        │        Local SQLite Database          │
+        │ - FTS5 Lexical Chunk Index            │
+        │ - AST Symbols & Evidence Ledger       │
+        │ - Flight Recorder Audit Trail         │
+        └───────────────────────────────────────┘
+```
 
 ---
 
-## Installation
+## 📦 Prerequisites
 
-### 1. Clone and configure environment
+1. **Python 3.11+**
+2. **Node.js 18+** & npm
+3. **Ollama** running locally on `http://127.0.0.1:11434`
+
+### Setup Local Models on Ollama (Gemma 4 & Embeddings)
+
+FirstPatch AI supports local zero-cost inference using Google's **Gemma 4** family via Ollama. Quantized GGUF models allow full repository reasoning on laptops without high-end GPUs:
 
 ```bash
-git clone https://github.com/YOUR_HANDLE/HacktoberDYP
-cd HacktoberDYP
+# Pull the recommended default Gemma 4 model
+ollama pull gemma4:e2b
+
+# Pull embedding model for semantic code retrieval
+ollama pull nomic-embed-text
+
+# Optional high-capacity variants:
+ollama pull gemma4:26b
+ollama pull gemma4:31b
+```
+
+#### Official Google Gemma & Hackathon Resources
+- [Google Gemma Ollama Integration Guide](https://ai.google.dev/gemma/docs/integrations/ollama)
+- [MLH Hack Days Gemma Hub](https://hack-days-gemma-mlh.pages.dev/)
+- [Gemma on Gemini API](https://ai.google.dev/gemma/docs/core/gemma_on_gemini_api)
+- [Official Google Gemma Cookbook](https://github.com/google-gemma/cookbook)
+- [MLH Gemma Documentation](https://mlh.link/gemma-docs)
+
+---
+
+## 🚀 Quickstart Guide
+
+### 1. Configure Environment
+```bash
 cp .env.example .env
-# Edit .env and fill in at minimum: GITHUB_TOKEN (optional but recommended)
 ```
 
-### 2. Backend setup
-
+### 2. Start the Backend
 ```bash
-cd backend
-
-# Create virtual environment
-python -m venv .venv
-
-# Activate (macOS/Linux)
-source .venv/bin/activate
-
-# Activate (Windows PowerShell)
-.\.venv\Scripts\Activate.ps1
+# Activate virtual environment
+source backend/venv/bin/activate  # or: ./backend/venv/bin/python
 
 # Install dependencies
-pip install -r requirements.txt
+pip install -r backend/requirements.txt
 
-# Start the development server
-uvicorn app.main:app --reload --host 0.0.0.0 --port 8000
+# Start backend server
+uvicorn backend.app.main:app --port 8000 --reload
 ```
+Backend API will be running at **`http://127.0.0.1:8000`** (Swagger docs at `/docs`).
 
-Backend will be available at: `http://localhost:8000`  
-API docs at: `http://localhost:8000/api/docs`
-
-### 3. Frontend setup
-
+### 3. Start the Frontend
 ```bash
 cd frontend
-
-# Install dependencies
 npm install
-
-# Start the development server
 npm run dev
 ```
-
-Frontend will be available at: `http://localhost:3000`
-
----
-
-## Environment Variables
-
-Copy `.env.example` to `.env` in the project root. Key variables:
-
-| Variable | Default | Description |
-|---|---|---|
-| `GITHUB_TOKEN` | (empty) | GitHub PAT for higher rate limits |
-| `AI_PROVIDER` | `none` | `none`, `google_ai_studio`, or `local_ollama` |
-| `GOOGLE_AI_API_KEY` | (empty) | Required if `AI_PROVIDER=google_ai_studio` |
-| `GOOGLE_AI_MODEL` | `gemma-4-31b-it` | Gemma model to use (`gemma-4-31b-it`, `gemma-4-26b-a4b-it`, `gemma-3-27b-it`) |
-| `OLLAMA_BASE_URL` | `http://localhost:11434` | Required if `AI_PROVIDER=local_ollama` |
-| `DATABASE_URL` | `sqlite+aiosqlite:///./firstpatch.db` | SQLite DB path |
-
-⚠️ **Never commit your actual `.env` file.** It is in `.gitignore`.
+Open your browser at **`http://localhost:3000`**.
 
 ---
 
-## Running Tests
+## 📊 Diagrammatic Analysis of Codebases (Recharts)
 
-### Backend tests
+On any repository workspace (`/repo/[owner]/[repo]`), switch to the **Diagrammatic Analysis** tab to interact with visual telemetry:
+- **Language & File Type Composition (Donut / Pie Chart):** File count, Kilobytes, and source percentages.
+- **AST Symbol Density by Module (Bar Chart):** Compares function and class distribution to locate architectural cores.
+- **Issue Multi-Dimensional Fit Profile (Radar Chart):** Evaluates beginner issues across 5 dimensions.
+- **Architecture Composition & Test Ratio (Horizontal Bar Chart):** Compares implementation code, test suites, and configuration files.
 
+---
+
+## ⚡ Optional Cloud LLM API Key Acceleration
+
+In the **AI Mentor** tab, click **Configure API Key** to provide a custom API key (stored securely in your local browser `localStorage`):
+- **OpenAI:** `sk-...` (`gpt-4o-mini` / `gpt-4o`)
+- **DigitalOcean Gradient™ AI Agentic Cloud:** `grad_...` ([mlh.link/digitalocean-gradient](https://mlh.link/digitalocean-gradient))
+- **Groq:** `gsk_...` (`llama-3.1-8b-instant`)
+- **Anthropic Claude:** `sk-ant-...`
+
+*If left blank, FirstPatch AI runs 100% locally on Ollama Gemma 4 with zero cloud dependencies or costs.*
+
+---
+
+## 🧪 Automated Testing & Compliance Verification
+
+### Run 10-Problem Compliance Suite
 ```bash
-cd backend
-.\.venv\Scripts\Activate.ps1    # Windows
-# OR
-source .venv/bin/activate       # macOS/Linux
+./backend/venv/bin/pytest backend/tests/test_compliance.py -v
+```
+Verifies all 10 problems from the problem analysis (AST navigation, issue matching, stacktrace line bounding, onboarding guide, setup doctor, contributor triage, contribution policy, reality checker, flight recorder, maintainer drafts).
 
-pytest tests/ -v
+### Run Full Test Suite
+```bash
+./backend/venv/bin/pytest -v
 ```
 
-### Frontend type checks
-
+### Build Frontend
 ```bash
 cd frontend
-npx tsc --noEmit
-npm run lint
+npm run build
 ```
 
 ---
 
-## Using the Application
+## 🛡️ Security & Privacy Principles
 
-1. Open `http://localhost:3000`
-2. Enter a public GitHub repository URL (e.g. `https://github.com/tiangolo/fastapi`)
-3. Click **Analyze** — the backend fetches real repository metadata
-4. Navigate to **Issues** to see ranked open issues with transparent scores
-5. Click **Generate Plan** on any issue to get a step-by-step contribution guide
-6. Check **Settings** to see service health and AI provider status
+1. **Local Model Execution:** Default inference runs locally via Ollama. No private repository source code is transmitted to cloud LLM providers.
+2. **Network Transparency:** Network requests are limited strictly to public GitHub APIs for repository metadata and file fetching.
+3. **Safe Subprocess Execution:** Command verification rejects destructive shell commands (`rm -rf`, `sudo`, piping to `/dev/sd*`, chained shell injections) and enforces timeouts.
+4. **Zero-Secret Storage:** Sensitive tokens and keys are never embedded in database records or prompt context.
 
 ---
 
-## Troubleshooting
+## 📄 License
 
-| Problem | Solution |
-|---|---|
-| Backend won't start | Check Python 3.11+ is installed; activate venv first |
-| `ModuleNotFoundError` | Run `pip install -r requirements.txt` in the backend directory |
-| GitHub rate limit (429) | Set `GITHUB_TOKEN` in `.env` |
-| Repository not found (404) | Confirm the repo exists and is public |
-| AI features show "not configured" | Set `AI_PROVIDER` and corresponding credentials in `.env` |
-| Frontend can't reach backend | Ensure backend is running on port 8000; check `NEXT_PUBLIC_API_URL` in `frontend/.env.local` |
-
----
-
-## Security
-
-- Repository content is treated as **untrusted data** — it is never executed or used as instructions to the AI.
-- URL validation prevents Server-Side Request Forgery (SSRF).
-- No code is executed automatically — test execution requires explicit user initiation and an isolated environment (not implemented in Phase 0).
-- Credentials are never logged or returned in API responses.
-
-See [docs/SECURITY.md](docs/SECURITY.md) for the full security model.
-
----
-
-## Current Implementation Status
-
-**Working:** Repository analysis, issue discovery, issue matching, contribution plan generation, setup diagnostics, health endpoint, AI provider adapter with deterministic fallback.
-
-**Not yet implemented:** Test execution (requires sandboxed environment), PR preparation workflow, authenticated GitHub session management.
-
-See [docs/IMPLEMENTATION_PLAN.md](docs/IMPLEMENTATION_PLAN.md) for the full roadmap.
-
----
-
-## License
-
-MIT
+MIT License. Open-source contribution mentorship platform.

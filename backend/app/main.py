@@ -1,61 +1,88 @@
-"""
-FirstPatch AI — Backend Application Entry Point
-"""
+import sys
+import os
 from contextlib import asynccontextmanager
-
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
+from backend.app.config import settings
+from backend.app.database import init_db
+from backend.app.routers import (
+    health,
+    repositories,
+    issues,
+    retrieval,
+    mentor,
+    contributions,
+    verification,
+    review,
+    learning,
+    benchmark,
+    compliance
+)
 
-from app.core.config import get_settings
-from app.core.logging import configure_logging
-from app.api.routes import health, repositories, issues, mentor, verification
-from app.api.routes.dataset import router as dataset_router, benchmark_router
-from app.api.routes.trust import router as trust_router
-from app.db.database import init_db
-
+# Ensure backend root is in sys.path for cross-module imports
+backend_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+if backend_dir not in sys.path:
+    sys.path.insert(0, backend_dir)
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    """Application lifespan: startup and shutdown."""
-    settings = get_settings()
-    configure_logging(settings.log_level)
-    await init_db()
+    # Initialize SQLite database and FTS5 tables
+    init_db()
     yield
-    # Shutdown: nothing to clean up yet
 
+app = FastAPI(
+    title=settings.APP_NAME,
+    version=settings.APP_VERSION,
+    description="Local-First AI Open-Source Contribution Mentor with Evidence Grounding, Setup Failure Doctor & Flight Recorder",
+    lifespan=lifespan
+)
 
-def create_app() -> FastAPI:
-    settings = get_settings()
+# CORS Middleware
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=settings.CORS_ORIGINS,
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
 
-    app = FastAPI(
-        title="FirstPatch AI API",
-        description="Evidence-backed open-source contribution mentor",
-        version=settings.app_version,
-        docs_url="/api/docs",
-        redoc_url="/api/redoc",
-        openapi_url="/api/openapi.json",
-    )
+# Core Routers
+app.include_router(health.router)
+app.include_router(repositories.router)
+app.include_router(issues.router)
+app.include_router(retrieval.router)
+app.include_router(mentor.router)
+app.include_router(contributions.router)
+app.include_router(verification.router)
+app.include_router(review.router)
+app.include_router(learning.router)
+app.include_router(benchmark.router)
+app.include_router(compliance.router)
 
-    # CORS — allow configured frontend origins
-    app.add_middleware(
-        CORSMiddleware,
-        allow_origins=settings.cors_origins_list,
-        allow_credentials=True,
-        allow_methods=["GET", "POST", "OPTIONS"],
-        allow_headers=["*"],
-    )
-
-    # Mount routers
-    app.include_router(health.router, prefix="/api")
-    app.include_router(repositories.router, prefix="/api/repositories")
-    app.include_router(issues.router, prefix="/api/issues")
-    app.include_router(mentor.router, prefix="/api/mentor")
-    app.include_router(verification.router, prefix="/api/verification")
-    app.include_router(dataset_router)
-    app.include_router(benchmark_router)
+# Mount Trust & Dataset extensions if available
+try:
+    from app.api.routes.trust import router as trust_router
     app.include_router(trust_router)
+except Exception:
+    pass
 
-    return app
+try:
+    from app.api.routes.dataset import router as dataset_router, benchmark_router as ds_benchmark_router
+    app.include_router(dataset_router)
+    app.include_router(ds_benchmark_router)
+except Exception:
+    pass
 
+@app.get("/")
+async def root():
+    return {
+        "app": settings.APP_NAME,
+        "version": settings.APP_VERSION,
+        "mission": "Turning unfamiliar repositories into verified open-source contributions",
+        "docs": "/docs",
+        "health": "/api/health"
+    }
 
-app = create_app()
+if __name__ == "__main__":
+    import uvicorn
+    uvicorn.run("backend.app.main:app", host="127.0.0.1", port=8000, reload=True)
