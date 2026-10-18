@@ -49,10 +49,29 @@
 
 ---
 
+## Phase 4: Dataset Intelligence, Gemma Adaptation & Benchmark Evaluation (Completed)
+
+| Component | Status | Notes |
+|---|---|---|
+| **Dataset Manifest** | ✅ Done | 5 sources: CodeSearchNet, RepoBench, SWE-bench Lite, GitHub GFI, Synthetic v1 — with local availability probing |
+| **Acquisition Descriptions** | ✅ Done | Step-by-step HuggingFace, HTTP, GitHub API, Synthetic instructions via `DatasetPipeline.describe_acquisition()` |
+| **Synthetic Evaluation Set** | ✅ Done | 6 tasks covering all 5 task types; JSONL; no external deps; always available for CI |
+| **JSONL Dataset Pipeline** | ✅ Done | `DatasetPipeline`: generate, iter, load, sample, SWE-bench & CodeSearchNet converters |
+| **Dataset Validator** | ✅ Done | `DatasetValidator`: JSON integrity, required-field checks per task type, multi-file directories |
+| **Task Schema** | ✅ Done | `EvaluationTask` (input + ground truth) + `TaskResult` (predictions + metrics) |
+| **Benchmark Metrics** | ✅ Done | `FileRetrievalMetrics` (P/R/F1/MRR/Hit@k), `PlanMetrics` (quality score), `DiagnosisMetrics` |
+| **Benchmark Evaluator** | ✅ Done | `BenchmarkEvaluator`: runs all 5 task types deterministically; persists `BenchmarkRun` |
+| **Benchmark Result Store** | ✅ Done | JSONL-backed `BenchmarkResultStore`: save/load/list/latest/aggregate_summary |
+| **Dataset API** | ✅ Done | `GET /api/dataset/manifest`, `GET /api/dataset/describe/{name}`, `POST /api/dataset/generate-synthetic`, `POST /api/dataset/validate/{name}` |
+| **Benchmark API** | ✅ Done | `POST /api/benchmark/run`, `GET /api/benchmark/runs`, `GET /api/benchmark/runs/{id}`, `GET /api/benchmark/summary` |
+| **Phase 4 Test Suite** | ✅ Done | 76 new tests covering manifest, pipeline, validator, schema, all metrics, evaluator, store, API routes |
+
+---
+
 ## Verified Test & Build Results
 
 ```
-Backend pytest:  143 passed, 0 failed in 1.28s (100% pass rate across Phases 0, 1, 2, 3)
+Backend pytest:  219 passed, 0 failed in 1.58s (100% pass rate across Phases 0, 1, 2, 3, 4)
 Frontend lint:   0 warnings, 0 errors
 TypeScript:      next build clean (0 type errors)
 Next.js build:   npm run build clean (compiled successfully, 5/5 static pages)
