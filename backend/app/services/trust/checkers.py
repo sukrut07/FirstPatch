@@ -128,11 +128,27 @@ def check_lines_contain(claim: Claim, fact_store: FactStore, authoritative_sha: 
     lines = file_rec["content"].splitlines()
     if start_line is not None and end_line is not None:
         try:
-            s = max(1, int(start_line)) - 1
-            e = min(len(lines), int(end_line))
+            s_val = int(start_line)
+            e_val = int(end_line)
+            if s_val < 1 or e_val < 1 or s_val > e_val:
+                return Verdict(
+                    claim_id=claim.claim_id,
+                    status=VerdictStatus.REFUTED,
+                    snapshot_sha=authoritative_sha,
+                    reason_code="INVALID_LINE_RANGE",
+                    explanation=f"Invalid line range: start_line={s_val}, end_line={e_val} (must satisfy 1 <= start_line <= end_line).",
+                )
+            s = s_val - 1
+            e = min(len(lines), e_val)
             target_slice = "\n".join(lines[s:e])
         except (ValueError, TypeError):
-            target_slice = file_rec["content"]
+            return Verdict(
+                claim_id=claim.claim_id,
+                status=VerdictStatus.REFUTED,
+                snapshot_sha=authoritative_sha,
+                reason_code="INVALID_LINE_RANGE",
+                explanation="Line range numbers must be valid integers.",
+            )
     else:
         target_slice = file_rec["content"]
 
@@ -382,6 +398,62 @@ def check_verify_result(claim: Claim, fact_store: FactStore, authoritative_sha: 
             reason_code="RUN_NOT_FOUND",
             explanation=f"Verification run '{run_id}' not found in FactStore.",
         )
+
+    # Repository match enforcement
+    if rec["repo_id"] != claim.repository:
+        return Verdict(
+            claim_id=claim.claim_id,
+            status=VerdictStatus.REFUTED,
+            snapshot_sha=authoritative_sha,
+            reason_code="REPOSITORY_MISMATCH",
+            explanation=f"Verification run '{run_id}' was recorded for repository '{rec['repo_id']}', not '{claim.repository}'.",
+            witness=rec,
+        )
+
+    # Commit SHA match enforcement
+    if rec["commit_sha"] != authoritative_sha:
+        return Verdict(
+            claim_id=claim.claim_id,
+            status=VerdictStatus.REFUTED,
+            snapshot_sha=authoritative_sha,
+            reason_code="COMMIT_MISMATCH",
+            explanation=f"Verification run '{run_id}' was recorded for commit {rec['commit_sha'][:8]}, not authoritative commit {authoritative_sha[:8]}.",
+            witness=rec,
+        )
+
+    # Integrity verification (output_hash / exit_code)
+    claimed_output_hash = claim.arguments.get("output_hash")
+    if claimed_output_hash and claimed_output_hash != rec.get("output_hash"):
+        return Verdict(
+            claim_id=claim.claim_id,
+            status=VerdictStatus.REFUTED,
+            snapshot_sha=authoritative_sha,
+            reason_code="INTEGRITY_MISMATCH",
+            explanation=f"Output hash mismatch for verification run '{run_id}'.",
+            witness=rec,
+        )
+
+    claimed_exit_code = claim.arguments.get("exit_code")
+    if claimed_exit_code is not None:
+        try:
+            if int(claimed_exit_code) != rec.get("exit_code"):
+                return Verdict(
+                    claim_id=claim.claim_id,
+                    status=VerdictStatus.REFUTED,
+                    snapshot_sha=authoritative_sha,
+                    reason_code="INTEGRITY_MISMATCH",
+                    explanation=f"Exit code mismatch for verification run '{run_id}'.",
+                    witness=rec,
+                )
+        except (ValueError, TypeError):
+            return Verdict(
+                claim_id=claim.claim_id,
+                status=VerdictStatus.REFUTED,
+                snapshot_sha=authoritative_sha,
+                reason_code="INTEGRITY_MISMATCH",
+                explanation="Claimed exit code must be an integer.",
+                witness=rec,
+            )
 
     # CRITICAL SECURITY RULE: Mock runs, static discoveries, or unavailable drivers
     # can NEVER certify an 'EXECUTED_PASS' claim!

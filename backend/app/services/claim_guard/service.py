@@ -88,8 +88,19 @@ class ClaimGuardService:
                 cached_report.cached = True
                 return cached_report
 
-        # 1. Check if closed
-        state = str(issue_data.get("state", "open")).lower()
+        # 1. Validate required state field
+        if "state" not in issue_data or issue_data.get("state") is None:
+            return ClaimGuardReport(
+                repository=repository,
+                issue_number=issue_num,
+                status=IssueReadinessStatus.UNKNOWN,
+                summary=f"Issue #{issue_num} metadata lacks required 'state' field.",
+                evidence=[],
+                checked_at=now_iso,
+                cached=False,
+            )
+
+        state = str(issue_data["state"]).strip().lower()
         if state != "open":
             ev = ClaimEvidence(
                 category="issue_closed",

@@ -115,7 +115,10 @@ class ContributionReceiptRecorder:
         return [e.model_dump() for e in self.events]
 
 
-def verify_receipt_chain(events_raw: List[Dict[str, Any]]) -> ReceiptVerificationReport:
+def verify_receipt_chain(
+    events_raw: List[Dict[str, Any]],
+    require_provenance: bool = False,
+) -> ReceiptVerificationReport:
     """Independently verifies the cryptographic hash chain and sequence integrity."""
     if not events_raw:
         return ReceiptVerificationReport(
@@ -154,6 +157,25 @@ def verify_receipt_chain(events_raw: List[Dict[str, Any]]) -> ReceiptVerificatio
                 if first_invalid is None:
                     first_invalid = idx
 
+            # Check verification provenance and untrusted mock driver claims
+            v_status = e_dict.get("verification_status")
+            v_driver = e_dict.get("verification_driver")
+            meta = e_dict.get("metadata") or {}
+
+            if v_status == "EXECUTED_PASS":
+                if not v_driver or v_driver in ("mock", "mock-sandbox", "static", "none", "unavailable"):
+                    errors.append(
+                        f"Event {idx} claims EXECUTED_PASS with untrusted driver '{v_driver}'. Real isolated driver required."
+                    )
+                    if first_invalid is None:
+                        first_invalid = idx
+                if (require_provenance or meta.get("requires_provenance")) and not meta.get("run_id"):
+                    errors.append(
+                        f"Event {idx} claims EXECUTED_PASS but lacks execution provenance (run_id missing from metadata)."
+                    )
+                    if first_invalid is None:
+                        first_invalid = idx
+
             # Recompute expected hash
             payload = {
                 "sequence_number": seq,
@@ -164,10 +186,10 @@ def verify_receipt_chain(events_raw: List[Dict[str, Any]]) -> ReceiptVerificatio
                 "evidence_ids": sorted(e_dict.get("evidence_ids") or []),
                 "policy_report_ref": e_dict.get("policy_report_ref"),
                 "understanding_receipt_ref": e_dict.get("understanding_receipt_ref"),
-                "verification_driver": e_dict.get("verification_driver"),
-                "verification_status": e_dict.get("verification_status"),
+                "verification_driver": v_driver,
+                "verification_status": v_status,
                 "result_code": e_dict.get("result_code"),
-                "metadata": e_dict.get("metadata") or {},
+                "metadata": meta,
             }
             computed_hash = ContributionReceiptRecorder.compute_canonical_hash(payload, prev)
             recorded_hash = e_dict.get("event_hash")

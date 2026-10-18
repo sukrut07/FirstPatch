@@ -7,7 +7,14 @@ and emits non-forgeable Verdict objects.
 
 import logging
 from typing import Callable, Dict, List
-from app.services.trust.claims import Claim, ClaimType, Verdict, VerdictStatus
+from app.services.trust.claims import (
+    Claim,
+    ClaimType,
+    Verdict,
+    VerdictStatus,
+    KERNEL_SECRET_DEFAULT,
+    compute_verdict_seal,
+)
 from app.services.trust.fact_store import FactStore
 from app.services.trust.checkers import (
     check_file_exists,
@@ -27,8 +34,9 @@ CheckerFn = Callable[[Claim, FactStore, str], Verdict]
 
 
 class CheckerKernel:
-    def __init__(self, fact_store: FactStore):
+    def __init__(self, fact_store: FactStore, secret: str = KERNEL_SECRET_DEFAULT):
         self.fact_store = fact_store
+        self.secret = secret
         self._registry: Dict[ClaimType, CheckerFn] = {
             ClaimType.FILE_EXISTS: check_file_exists,
             ClaimType.SYMBOL_IN_FILE: check_symbol_in_file,
@@ -41,42 +49,64 @@ class CheckerKernel:
             ClaimType.REVIEW_THEME_SUPPORTED: check_review_theme,
         }
 
+    def seal_verdict(self, verdict: Verdict) -> Verdict:
+        """Applies a tamper-evident cryptographic kernel seal to an issued verdict."""
+        verdict.kernel_seal = compute_verdict_seal(
+            claim_id=verdict.claim_id,
+            status=verdict.status.value if isinstance(verdict.status, VerdictStatus) else str(verdict.status),
+            snapshot_sha=verdict.snapshot_sha,
+            reason_code=verdict.reason_code,
+            secret=self.secret,
+        )
+        return verdict
+
+    def is_verdict_authentic(self, verdict: Verdict) -> bool:
+        """Validates that a verdict was genuinely generated and sealed by the kernel."""
+        return verdict.is_sealed_by_kernel(self.secret)
+
     def verify_claim(self, claim: Claim, authoritative_sha: str) -> Verdict:
-        # 1. Snapshot SHA validation: Stale if mismatch
-        if claim.snapshot_sha != authoritative_sha:
-            return Verdict(
-                claim_id=claim.claim_id,
-                status=VerdictStatus.STALE,
-                snapshot_sha=authoritative_sha,
-                reason_code="SHA_MISMATCH",
-                explanation=(
-                    f"Claim snapshot {claim.snapshot_sha[:8]} does not match "
-                    f"authoritative snapshot {authoritative_sha[:8]}."
-                ),
+        # 1. Snapshot SHA validation: Stale if mismatch or empty
+        if not claim.snapshot_sha or claim.snapshot_sha != authoritative_sha:
+            return self.seal_verdict(
+                Verdict(
+                    claim_id=claim.claim_id,
+                    status=VerdictStatus.STALE,
+                    snapshot_sha=authoritative_sha,
+                    reason_code="SHA_MISMATCH",
+                    explanation=(
+                        f"Claim snapshot {claim.snapshot_sha[:8] if claim.snapshot_sha else 'EMPTY'} does not match "
+                        f"authoritative snapshot {authoritative_sha[:8]}."
+                    ),
+                )
             )
 
         # 2. Dispatch to registered checker
         checker = self._registry.get(claim.claim_type)
         if not checker:
-            return Verdict(
-                claim_id=claim.claim_id,
-                status=VerdictStatus.UNKNOWN,
-                snapshot_sha=authoritative_sha,
-                reason_code="UNSUPPORTED_CLAIM_TYPE",
-                explanation=f"No registered deterministic checker for claim type '{claim.claim_type}'.",
+            return self.seal_verdict(
+                Verdict(
+                    claim_id=claim.claim_id,
+                    status=VerdictStatus.UNKNOWN,
+                    snapshot_sha=authoritative_sha,
+                    reason_code="UNSUPPORTED_CLAIM_TYPE",
+                    explanation=f"No registered deterministic checker for claim type '{claim.claim_type}'.",
+                )
             )
 
         # 3. Secure execution: Catch exceptions and return UNKNOWN
         try:
-            return checker(claim, self.fact_store, authoritative_sha)
+            verdict = checker(claim, self.fact_store, authoritative_sha)
+            return self.seal_verdict(verdict)
         except Exception as ex:
             logger.exception("Checker exception on claim %s: %s", claim.claim_id, ex)
-            return Verdict(
-                claim_id=claim.claim_id,
-                status=VerdictStatus.UNKNOWN,
-                snapshot_sha=authoritative_sha,
-                reason_code="CHECKER_EXCEPTION",
-                explanation=f"Checker encountered an internal error: {ex}",
+            return self.seal_verdict(
+                Verdict(
+                    claim_id=claim.claim_id,
+                    status=VerdictStatus.UNKNOWN,
+                    snapshot_sha=authoritative_sha,
+                    reason_code="CHECKER_EXCEPTION",
+                    explanation=f"Checker encountered an internal error: {ex}",
+                )
             )
 
     def evaluate_claims(
@@ -90,14 +120,17 @@ class CheckerKernel:
             # Enforce repository match
             if claim.repository != repository:
                 results.append(
-                    Verdict(
-                        claim_id=claim.claim_id,
-                        status=VerdictStatus.REFUTED,
-                        snapshot_sha=authoritative_sha,
-                        reason_code="REPOSITORY_MISMATCH",
-                        explanation=f"Claim repository '{claim.repository}' contradicts target '{repository}'.",
+                    self.seal_verdict(
+                        Verdict(
+                            claim_id=claim.claim_id,
+                            status=VerdictStatus.REFUTED,
+                            snapshot_sha=authoritative_sha,
+                            reason_code="REPOSITORY_MISMATCH",
+                            explanation=f"Claim repository '{claim.repository}' contradicts target '{repository}'.",
+                        )
                     )
                 )
                 continue
             results.append(self.verify_claim(claim, authoritative_sha))
         return results
+

@@ -10,6 +10,13 @@ import os
 import re
 import sqlite3
 from typing import Any, Dict, List, Optional
+import urllib.parse
+
+RESERVED_DEVICE_NAMES = {
+    "CON", "PRN", "AUX", "NUL",
+    "COM1", "COM2", "COM3", "COM4", "COM5", "COM6", "COM7", "COM8", "COM9",
+    "LPT1", "LPT2", "LPT3", "LPT4", "LPT5", "LPT6", "LPT7", "LPT8", "LPT9",
+}
 
 
 def normalize_repo_path(raw_path: str) -> str:
@@ -17,18 +24,28 @@ def normalize_repo_path(raw_path: str) -> str:
     if not raw_path or not isinstance(raw_path, str):
         raise ValueError("Repository path must be a non-empty string.")
     
-    # Reject null bytes
+    # Reject raw null bytes
     if "\0" in raw_path:
         raise ValueError(f"Null byte detected in path: {raw_path!r}")
+
+    # Check for URL-encoded null bytes or control sequences
+    decoded = urllib.parse.unquote(raw_path)
+    if "\0" in decoded:
+        raise ValueError(f"Decoded null byte detected in path: {raw_path!r}")
+
+    # Reject non-printable control characters
+    for ch in decoded:
+        if ord(ch) < 32 or ord(ch) == 127:
+            raise ValueError(f"Control character detected in path: {raw_path!r}")
         
-    # Standardize backslashes
-    p = raw_path.replace("\\", "/").strip()
+    # Standardize backslashes on the decoded path
+    p = decoded.replace("\\", "/").strip()
     
     # Reject drive-letters (e.g. C:, D:)
     if re.match(r"^[a-zA-Z]:", p):
         raise ValueError(f"Absolute drive-letter path is forbidden: {raw_path}")
         
-    # Reject leading slashes
+    # Reject leading slashes or UNC paths
     if p.startswith("/"):
         raise ValueError(f"Absolute path is forbidden: {raw_path}")
         
@@ -40,6 +57,14 @@ def normalize_repo_path(raw_path: str) -> str:
     parts = p.split("/")
     if any(segment == ".." for segment in parts):
         raise ValueError(f"Path traversal ('..') is strictly forbidden: {raw_path}")
+
+    # Check reserved device names and invalid trailing dots/spaces
+    for seg in parts:
+        base_name = seg.split(".")[0].upper()
+        if base_name in RESERVED_DEVICE_NAMES:
+            raise ValueError(f"Reserved device name is forbidden: {raw_path}")
+        if seg.endswith(".") or seg.endswith(" "):
+            raise ValueError(f"Path segment has forbidden trailing dot or space: {raw_path}")
         
     # Remove empty or current directory dot segments
     clean_parts = [seg for seg in parts if seg and seg != "."]
@@ -47,6 +72,7 @@ def normalize_repo_path(raw_path: str) -> str:
         raise ValueError(f"Path resolves to empty root: {raw_path}")
         
     return "/".join(clean_parts)
+
 
 
 class FactStore:

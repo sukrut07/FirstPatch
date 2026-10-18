@@ -277,6 +277,21 @@ def verify_receipt(req: ReceiptVerifyRequest):
 @router.post("/pr-pack", response_model=PRPackage)
 def generate_pr_package(req: PRPackRequest):
     """Assembles a policy-compliant PR package with verified evidence, test results, and disclosures."""
+    from app.services.trust.receipt import ReceiptEvent, verify_receipt_chain
+
+    parsed_events = None
+    if req.receipt_events:
+        chain_report = verify_receipt_chain(req.receipt_events)
+        if not chain_report.is_valid:
+            raise HTTPException(
+                status_code=400,
+                detail=f"Receipt event chain is invalid or tampered: {'; '.join(chain_report.errors)}",
+            )
+        try:
+            parsed_events = [ReceiptEvent(**e) for e in req.receipt_events]
+        except Exception as ex:
+            raise HTTPException(status_code=400, detail=f"Failed to parse receipt events: {ex}")
+
     return pr_pack_generator.generate_package(
         repository=req.repository,
         snapshot_sha=req.snapshot_sha,
@@ -286,7 +301,7 @@ def generate_pr_package(req: PRPackRequest):
         rendered_plan=req.rendered_plan,
         verification_record=req.verification_record,
         understanding_receipt=req.understanding_receipt,
-        receipt_events=None,
+        receipt_events=parsed_events,
         user_diff=req.user_diff,
         custom_pr_template=req.custom_pr_template,
     )

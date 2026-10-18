@@ -79,6 +79,7 @@ class ReviewMemoryService:
         bounded_raw = raw_comments[: self.max_comments_cap]
 
         parsed: List[ReviewComment] = []
+        seen_comment_signatures = set()
         for c in bounded_raw:
             body = (c.get("body") or "").strip()
             if not body:
@@ -86,6 +87,16 @@ class ReviewMemoryService:
             path = c.get("path")
             if filter_file_path and path and filter_file_path.lower() not in path.lower():
                 continue
+
+            # Deduplicate: exact duplicate comments do not count as independent evidence
+            sig = (
+                c.get("pr_number") or c.get("pull_request_number") or 0,
+                path or "",
+                body.strip().lower(),
+            )
+            if sig in seen_comment_signatures:
+                continue
+            seen_comment_signatures.add(sig)
 
             parsed.append(
                 ReviewComment(
