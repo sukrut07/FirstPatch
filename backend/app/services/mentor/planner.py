@@ -116,8 +116,35 @@ class MentorService:
                 "Prerequisites were estimated from repository analysis alone."
             )
 
-        # --- Summary ---
+        # --- Summary (AI enriched if active, deterministic fallback otherwise) ---
         summary = _generate_summary(issue, repo_overview, relevant_files)
+        ai_generated = False
+
+        if (
+            self.ai_provider
+            and getattr(self.ai_provider, "provider_name", "") != "deterministic_fallback"
+        ):
+            try:
+                system_prompt = (
+                    "You are FirstPatch AI, an open-source mentor helping beginner contributors. "
+                    "Analyze the provided repository facts and issue details. "
+                    "Provide a clear, pedagogical summary explaining the problem and approach for a beginner. "
+                    "Do NOT invent files or directories not listed in the repository facts."
+                )
+                user_msg = (
+                    f"Repository: {repo_overview.full_name}\n"
+                    f"Language: {repo_overview.primary_language}\n"
+                    f"Issue #{issue.number}: {issue.title}\n"
+                    f"Description: {(issue.body or '')[:1000]}\n"
+                    f"Known files: {', '.join(repo_overview.directory_snapshot[:15])}"
+                )
+                ai_resp = await self.ai_provider.complete(system_prompt, user_msg, max_tokens=500)
+                if ai_resp and not ai_resp.is_fallback and ai_resp.content:
+                    summary = ai_resp.content.strip()
+                    ai_generated = True
+            except Exception as exc:
+                logger.warning("AI plan enrichment failed: %s. Using deterministic plan.", exc)
+                uncertainties.append(f"AI enrichment unavailable: {exc}. Generated using deterministic engine.")
 
         return ContributionPlan(
             session_id=uuid4(),
@@ -134,7 +161,7 @@ class MentorService:
             evidence_refs=evidence_refs,
             uncertainties=uncertainties,
             assumptions=assumptions,
-            ai_generated=False,
+            ai_generated=ai_generated,
             generated_at=datetime.now(timezone.utc),
         )
 
@@ -156,7 +183,10 @@ class MentorService:
         """
         issue_text = f"{issue.title} {issue.body or ''}".lower()
         directory_snapshot = repo_overview.directory_snapshot
-        all_known_paths = list(directory_snapshot)  # Top-level only
+        all_known_paths = list(directory_snapshot)
+        for ev in repo_overview.evidence_refs:
+            if ev.file_path and ev.file_path not in all_known_paths:
+                all_known_paths.append(ev.file_path)
 
         if not all_known_paths:
             uncertainties.append(
@@ -165,8 +195,16 @@ class MentorService:
             )
             return []
 
-        # Extract meaningful keywords from issue text
-        # Remove common stop words
+        # 1. Match explicit file mentions in issue text (e.g. main.py matching src/main.py)
+        relevant: list[str] = []
+        explicit_files = re.findall(r"[\w/\.-]+\.[a-zA-Z0-9]+", issue_text)
+        for ef in explicit_files:
+            for known in all_known_paths:
+                if known.lower().endswith(ef) or ef in known.lower():
+                    if known not in relevant:
+                        relevant.append(known)
+
+        # 2. Extract meaningful keywords from issue text
         stop_words = {
             "the", "a", "an", "is", "it", "in", "on", "at", "to", "for",
             "of", "and", "or", "but", "not", "with", "this", "that", "have",
@@ -179,6 +217,8 @@ class MentorService:
         # Count keyword matches per known path
         matched: list[tuple[str, int]] = []
         for path in all_known_paths:
+            if path in relevant:
+                continue
             path_lower = path.lower()
             matches = sum(1 for kw in keywords if kw in path_lower)
             if matches > 0:
@@ -186,7 +226,10 @@ class MentorService:
 
         # Sort by match count
         matched.sort(key=lambda x: x[1], reverse=True)
-        relevant = [p for p, _ in matched[:5]]
+        for p, _ in matched:
+            if len(relevant) >= 5:
+                break
+            relevant.append(p)
 
         if relevant:
             for path in relevant:

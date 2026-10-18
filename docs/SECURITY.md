@@ -119,27 +119,31 @@ Without these controls, executing arbitrary repository code could:
 - Consume unlimited resources
 - Execute malicious payloads from compromised repositories
 
-**Phase 1 plan:** Use Docker with resource limits and read-only filesystem mounts for safe test execution.
-
-Until then, the application recommends tests and shows their discovered locations but does not execute them.
-
----
-
-## Credential Security
-
-- Credentials are read from environment variables, never hardcoded
-- No credentials are returned in API responses
-- No credentials are logged (logging filters are configured)
-- The health endpoint only reports whether authentication is configured, not the token value
-- The `.env` file is in `.gitignore`
-- `.env.example` contains only placeholders
+**Safe Execution Policy:**
+- In Phase 0 and Phase 1, repository code is NEVER executed on the host.
+- Python AST analysis uses Python's built-in `ast.parse` which parses syntax trees without executing any code.
+- Setup diagnostics and error logs are parsed with deterministic regex patterns, never executed in shells.
+- All suggested tests are purely instructional and explicitly designated as recommendations for the user to run in their own local development environment.
+- The Repository Reality Checker automatically rejects or neutralizes false test pass claims.
 
 ---
 
-## Known Limitations (Phase 0)
+## Agent Tool Security Boundaries
 
-1. **No authenticated session management** — repository analysis is stateless and unauthenticated (beyond the optional GitHub token).
-2. **No test execution sandbox** — tests must be run locally by the user.
-3. **File analysis is bounded** — large repositories with many files will have partial analysis (the tree is not fetched recursively by default).
-4. **AI responses are not guaranteed** — model outputs are validated but may still contain inaccuracies. All AI-generated content is clearly labelled.
-5. **Rate limiting relies on GitHub's enforcement** — without a token, only 60 requests/hour are permitted per IP.
+The FirstPatch AI Agent operates under strict, verifiable security constraints:
+1. **Auditable Tools Only**: The agent coordinates Tools A-H with typed Pydantic signatures. It cannot spawn arbitrary subprocesses or invoke generic shell interpreters.
+2. **Network Isolation**: All outbound network traffic is restricted to `github.com` via the GitHub API client and official Gemma endpoints (`generativelanguage.googleapis.com` or local `localhost:11434`).
+3. **SSRF Blocking**: Localhost, link-local (169.254.x.x), loopback (127.x.x.x), and private subnet addresses (10.x, 192.168.x, 172.16-31.x) are strictly blocked for repository URLs.
+4. **Data Isolation**: Repository files, READMEs, and issue descriptions are placed into untrusted data blocks and never parsed as system instructions.
+5. **No Credential Propagation**: Neither `GITHUB_TOKEN` nor `GOOGLE_AI_API_KEY` is passed to the frontend or exposed to the model.
+
+---
+
+## Known Limitations (Phase 1)
+
+1. **No test execution sandbox** — tests must be run locally by the user.
+2. **File analysis is bounded** — large repositories with many files will have partial analysis (the tree is bounded to top-level and issue-referenced candidates).
+3. **AST extraction language support** — full AST parsing is supported for Python. JavaScript/TypeScript, Go, and Rust use structural regex heuristics with explicit limitation disclosures.
+4. **AI responses are grounded but require verification** — model outputs are checked by the Repository Reality Checker, but beginners are encouraged to inspect files directly.
+5. **Rate limiting relies on GitHub's enforcement** — unauthenticated requests are limited to 60/hour. Provide a `GITHUB_TOKEN` in `.env` to increase to 5,000/hour.
+
