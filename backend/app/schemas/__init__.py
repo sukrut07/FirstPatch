@@ -29,6 +29,15 @@ from app.schemas.models import (
     VerificationCheck,
     VerificationStatus,
 )
+from app.schemas.verification import (
+    ExecutionStatus,
+    RuntimeProfile,
+    VALID_TRANSITIONS,
+    VerificationInfrastructureHealth,
+    VerificationRunRecord,
+    VerificationRunRequest,
+    VerificationTestCounts,
+)
 
 __all__ = [
     "AnalysisStatus",
@@ -59,4 +68,11 @@ __all__ = [
     "TestLocation",
     "VerificationCheck",
     "VerificationStatus",
+    "ExecutionStatus",
+    "RuntimeProfile",
+    "VALID_TRANSITIONS",
+    "VerificationInfrastructureHealth",
+    "VerificationRunRecord",
+    "VerificationRunRequest",
+    "VerificationTestCounts",
 ]
