@@ -1,4 +1,4 @@
-import type { Config } from "tailwindcss";
+﻿import type { Config } from "tailwindcss";
 
 const config: Config = {
   content: [
@@ -12,11 +12,10 @@ const config: Config = {
   theme: {
     extend: {
       fontFamily: {
-        sans: ["var(--font-inter)", "system-ui", "sans-serif"],
+        sans: ["var(--font-outfit)", "system-ui", "sans-serif"],
         mono: ["var(--font-jetbrains)", "Menlo", "monospace"],
       },
       colors: {
-        // Brand palette — deep blue-indigo tones
         brand: {
           50:  "#eef2ff",
           100: "#e0e7ff",
@@ -30,47 +29,75 @@ const config: Config = {
           900: "#312e81",
           950: "#1e1b4b",
         },
-        // Surface system (dark mode first)
         surface: {
-          950: "#0a0a0f",
-          900: "#0f0f1a",
-          850: "#13131f",
-          800: "#1a1a2e",
-          750: "#1e1e35",
-          700: "#252540",
-          600: "#2e2e52",
-          500: "#3d3d6b",
+          50:  "#fafbff",
+          100: "#f4f5fb",
+          200: "#eceef8",
+          300: "#e0e2f4",
+          400: "#c9cce8",
+          500: "#a8addb",
+          600: "#7c82c5",
+          700: "#5a60a8",
+          800: "#3f4490",
+          900: "#2e3278",
         },
-        // Semantic status colors
+        lavender: {
+          50:  "#f5f3ff",
+          100: "#ede9fe",
+          200: "#ddd6fe",
+          300: "#c4b5fd",
+          400: "#a78bfa",
+          500: "#8b5cf6",
+          600: "#7c3aed",
+          700: "#6d28d9",
+          800: "#5b21b6",
+          900: "#4c1d95",
+        },
         status: {
-          success: "#10b981",
-          warning: "#f59e0b",
-          error:   "#ef4444",
-          info:    "#3b82f6",
+          success: "#059669",
+          warning: "#d97706",
+          error:   "#dc2626",
+          info:    "#2563eb",
           muted:   "#6b7280",
         },
       },
       backgroundImage: {
-        "brand-gradient": "linear-gradient(135deg, #4f46e5 0%, #7c3aed 100%)",
-        "surface-gradient": "linear-gradient(180deg, #0f0f1a 0%, #1a1a2e 100%)",
-        "card-glow": "radial-gradient(ellipse at 50% 0%, rgba(99,102,241,0.15) 0%, transparent 70%)",
+        "brand-gradient":    "linear-gradient(135deg, #6366f1 0%, #7c3aed 100%)",
+        "lavender-gradient": "linear-gradient(135deg, #ede9fe 0%, #ddd6fe 60%, #e0e7ff 100%)",
+        "panel-gradient":    "linear-gradient(135deg, #f0eeff 0%, #e8e4fb 50%, #ede9fe 100%)",
+        "card-glow":         "radial-gradient(ellipse at 50% 0%, rgba(99,102,241,0.08) 0%, transparent 70%)",
+        "hero-gradient":     "radial-gradient(ellipse at 30% 40%, rgba(139,92,246,0.12) 0%, transparent 60%), radial-gradient(ellipse at 70% 60%, rgba(99,102,241,0.08) 0%, transparent 50%)",
       },
       boxShadow: {
-        "brand-sm":  "0 0 0 1px rgba(99,102,241,0.3)",
-        "brand-md":  "0 0 20px rgba(99,102,241,0.2), 0 0 0 1px rgba(99,102,241,0.3)",
-        "card":      "0 1px 3px rgba(0,0,0,0.4), 0 0 0 1px rgba(255,255,255,0.05)",
-        "card-hover":"0 4px 16px rgba(0,0,0,0.5), 0 0 0 1px rgba(99,102,241,0.3)",
+        "brand-sm":    "0 0 0 1px rgba(99,102,241,0.25)",
+        "brand-md":    "0 0 20px rgba(99,102,241,0.15), 0 0 0 1px rgba(99,102,241,0.2)",
+        "card":        "0 1px 3px rgba(99,102,241,0.06), 0 4px 16px rgba(99,102,241,0.04), 0 0 0 1px rgba(99,102,241,0.08)",
+        "card-hover":  "0 8px 32px rgba(99,102,241,0.14), 0 0 0 1px rgba(99,102,241,0.18)",
+        "panel":       "0 2px 8px rgba(99,102,241,0.08), 0 0 0 1px rgba(139,92,246,0.12)",
+        "input":       "0 1px 2px rgba(99,102,241,0.06), 0 0 0 1px rgba(99,102,241,0.12)",
+        "input-focus": "0 0 0 3px rgba(99,102,241,0.15), 0 0 0 1px rgba(99,102,241,0.4)",
+      },
+      borderRadius: {
+        "2xl": "1rem",
+        "3xl": "1.5rem",
+        "4xl": "2rem",
       },
       animation: {
-        "fade-in":    "fadeIn 0.3s ease-out",
-        "slide-up":   "slideUp 0.35s ease-out",
+        "fade-in":    "fadeIn 0.35s ease-out",
+        "slide-up":   "slideUp 0.4s cubic-bezier(0.16,1,0.3,1)",
+        "slide-in":   "slideIn 0.4s cubic-bezier(0.16,1,0.3,1)",
         "pulse-slow": "pulse 3s cubic-bezier(0.4,0,0.6,1) infinite",
-        "shimmer":    "shimmer 1.5s linear infinite",
+        "shimmer":    "shimmer 1.8s linear infinite",
+        "float":      "float 6s ease-in-out infinite",
+        "glow-pulse": "glowPulse 3s ease-in-out infinite",
       },
       keyframes: {
-        fadeIn:  { from: { opacity: "0" }, to: { opacity: "1" } },
-        slideUp: { from: { opacity: "0", transform: "translateY(12px)" }, to: { opacity: "1", transform: "translateY(0)" } },
-        shimmer: { from: { backgroundPosition: "-200% 0" }, to: { backgroundPosition: "200% 0" } },
+        fadeIn:    { from: { opacity: "0" }, to: { opacity: "1" } },
+        slideUp:   { from: { opacity: "0", transform: "translateY(16px)" }, to: { opacity: "1", transform: "translateY(0)" } },
+        slideIn:   { from: { opacity: "0", transform: "translateX(-12px)" }, to: { opacity: "1", transform: "translateX(0)" } },
+        shimmer:   { from: { backgroundPosition: "-200% 0" }, to: { backgroundPosition: "200% 0" } },
+        float:     { "0%,100%": { transform: "translateY(0)" }, "50%": { transform: "translateY(-8px)" } },
+        glowPulse: { "0%,100%": { opacity: "0.6" }, "50%": { opacity: "1" } },
       },
     },
   },

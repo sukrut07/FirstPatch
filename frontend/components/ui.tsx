@@ -3,7 +3,7 @@
 import React from "react";
 
 // ---------------------------------------------------------------------------
-// Icons (inline SVG to avoid external icon library deps)
+// Icons (inline SVG — no external icon deps)
 // ---------------------------------------------------------------------------
 
 export function IconGitHub({ className = "w-5 h-5" }: { className?: string }) {
@@ -95,14 +95,49 @@ export function IconExternal({ className = "w-3 h-3" }: { className?: string }) 
   );
 }
 
+export function IconSparkle({ className = "w-4 h-4" }: { className?: string }) {
+  return (
+    <svg className={className} fill="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+      <path d="M9.813 15.904 9 18.75l-.813-2.846a4.5 4.5 0 0 0-3.09-3.09L2.25 12l2.846-.813a4.5 4.5 0 0 0 3.09-3.09L9 5.25l.813 2.846a4.5 4.5 0 0 0 3.09 3.09L15.75 12l-2.846.813a4.5 4.5 0 0 0-3.09 3.09ZM18.259 8.715 18 9.75l-.259-1.035a3.375 3.375 0 0 0-2.455-2.456L14.25 6l1.036-.259a3.375 3.375 0 0 0 2.455-2.456L18 2.25l.259 1.035a3.375 3.375 0 0 0 2.456 2.456L21.75 6l-1.035.259a3.375 3.375 0 0 0-2.456 2.456Z"/>
+    </svg>
+  );
+}
+
+export function IconCursor({ className = "w-4 h-4" }: { className?: string }) {
+  return (
+    <svg className={className} viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+      <path d="M3.75 2.25a.75.75 0 0 0-.75.75v18a.75.75 0 0 0 1.28.53l5.05-5.05 4.22 8.44a.75.75 0 0 0 1.34-.67l-4.14-8.28h6.25a.75.75 0 0 0 .53-1.28L4.28 2.47a.75.75 0 0 0-.53-.22Z" />
+    </svg>
+  );
+}
+
+export function IconCode({ className = "w-4 h-4" }: { className?: string }) {
+  return (
+    <svg className={className} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2} aria-hidden="true">
+      <path strokeLinecap="round" strokeLinejoin="round" d="M17.25 6.75 22.5 12l-5.25 5.25m-10.5 0L1.5 12l5.25-5.25m7.5-3-4.5 16.5" />
+    </svg>
+  );
+}
+
+export function IconLayers({ className = "w-4 h-4" }: { className?: string }) {
+  return (
+    <svg className={className} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2} aria-hidden="true">
+      <path strokeLinecap="round" strokeLinejoin="round" d="m6.75 7.5 5.25 3 5.25-3-5.25-3-5.25 3Zm0 6 5.25 3 5.25-3m-10.5 3 5.25 3 5.25-3" />
+    </svg>
+  );
+}
+
 // ---------------------------------------------------------------------------
-// Reusable UI Components
+// Reusable UI Components (light-mode)
 // ---------------------------------------------------------------------------
 
 /** Score bar showing normalized 0–1 score */
 export function ScoreBar({ score, className = "" }: { score: number; className?: string }) {
   const pct = Math.round(score * 100);
-  const color = pct >= 70 ? "from-brand-500 to-brand-400" : pct >= 40 ? "from-amber-500 to-amber-400" : "from-red-500 to-red-400";
+  const color =
+    pct >= 70 ? "from-brand-500 to-lavender-500" :
+    pct >= 40 ? "from-amber-400 to-orange-400" :
+    "from-red-400 to-rose-400";
   return (
     <div className={`score-bar ${className}`} role="progressbar" aria-valuenow={pct} aria-valuemin={0} aria-valuemax={100}>
       <div className={`score-fill bg-gradient-to-r ${color}`} style={{ width: `${pct}%` }} />
@@ -113,16 +148,16 @@ export function ScoreBar({ score, className = "" }: { score: number; className?:
 /** Difficulty badge */
 export function DifficultyBadge({ level }: { level: string }) {
   const styles: Record<string, string> = {
-    beginner: "difficulty-beginner",
+    beginner:     "difficulty-beginner",
     intermediate: "difficulty-intermediate",
-    advanced: "difficulty-advanced",
-    unknown: "difficulty-unknown",
+    advanced:     "difficulty-advanced",
+    unknown:      "difficulty-unknown",
   };
   const labels: Record<string, string> = {
-    beginner: "Beginner",
+    beginner:     "Beginner",
     intermediate: "Intermediate",
-    advanced: "Advanced",
-    unknown: "Unknown",
+    advanced:     "Advanced",
+    unknown:      "Unknown",
   };
   return <span className={styles[level] ?? "badge-muted"}>{labels[level] ?? level}</span>;
 }
@@ -130,16 +165,16 @@ export function DifficultyBadge({ level }: { level: string }) {
 /** Evidence status badge */
 export function EvidenceBadge({ status }: { status: string }) {
   const styles: Record<string, string> = {
-    verified: "evidence-verified",
-    inferred: "evidence-inferred",
+    verified:    "evidence-verified",
+    inferred:    "evidence-inferred",
     unavailable: "evidence-missing",
-    stale: "evidence-stale",
+    stale:       "evidence-stale",
   };
   const labels: Record<string, string> = {
-    verified: "✓ Verified",
-    inferred: "~ Inferred",
+    verified:    "✓ Verified",
+    inferred:    "~ Inferred",
     unavailable: "✗ Missing",
-    stale: "⏱ Stale",
+    stale:       "⏱ Stale",
   };
   return <span className={styles[status] ?? "badge-muted"}>{labels[status] ?? status}</span>;
 }
@@ -151,11 +186,11 @@ export function StatusIndicator({ status }: { status: string }) {
     partial:     { color: "text-status-warning", label: "Partial analysis",     dot: "bg-status-warning" },
     failed:      { color: "text-status-error",   label: "Analysis failed",      dot: "bg-status-error" },
     in_progress: { color: "text-status-info",    label: "Analyzing…",           dot: "bg-status-info animate-pulse" },
-    pending:     { color: "text-gray-400",       label: "Pending",              dot: "bg-gray-500" },
+    pending:     { color: "text-gray-500",       label: "Pending",              dot: "bg-gray-400" },
   };
-  const cfg = map[status] ?? { color: "text-gray-400", label: status, dot: "bg-gray-500" };
+  const cfg = map[status] ?? { color: "text-gray-500", label: status, dot: "bg-gray-400" };
   return (
-    <span className={`inline-flex items-center gap-1.5 text-xs font-medium ${cfg.color}`}>
+    <span className={`inline-flex items-center gap-1.5 text-xs font-semibold ${cfg.color}`}>
       <span className={`w-1.5 h-1.5 rounded-full ${cfg.dot}`} />
       {cfg.label}
     </span>
@@ -174,13 +209,13 @@ export function EmptyState({ title, description, action }: {
   action?: React.ReactNode;
 }) {
   return (
-    <div className="flex flex-col items-center justify-center py-16 text-center animate-in">
-      <div className="w-16 h-16 rounded-2xl bg-surface-800 border border-white/[0.06] flex items-center justify-center mb-4">
-        <IconSearch className="w-8 h-8 text-gray-600" />
+    <div className="flex flex-col items-center justify-center py-20 text-center animate-in">
+      <div className="w-20 h-20 rounded-3xl bg-lavender-100 border border-lavender-200 flex items-center justify-center mb-5 shadow-panel-inner-glow">
+        <IconSearch className="w-9 h-9 text-brand-400" />
       </div>
-      <h3 className="text-base font-semibold text-gray-300 mb-2">{title}</h3>
-      <p className="text-sm text-gray-500 max-w-sm">{description}</p>
-      {action && <div className="mt-4">{action}</div>}
+      <h3 className="text-base font-bold text-gray-700 mb-2">{title}</h3>
+      <p className="text-sm text-gray-500 max-w-sm leading-relaxed">{description}</p>
+      {action && <div className="mt-5">{action}</div>}
     </div>
   );
 }
@@ -218,7 +253,7 @@ export function ExternalLink({ href, children, className = "" }: {
       href={href}
       target="_blank"
       rel="noopener noreferrer"
-      className={`inline-flex items-center gap-1 text-brand-400 hover:text-brand-300 transition-colors ${className}`}
+      className={`inline-flex items-center gap-1 text-brand-600 hover:text-brand-800 transition-colors font-medium ${className}`}
     >
       {children}
       <IconExternal />
@@ -228,7 +263,7 @@ export function ExternalLink({ href, children, className = "" }: {
 
 /** Label chip for GitHub issue labels */
 export function IssueLabel({ name, color }: { name: string; color?: string }) {
-  const bgColor = color ? `#${color}25` : undefined;
+  const bgColor  = color ? `#${color}20` : undefined;
   const textColor = color ? `#${color}` : undefined;
   return (
     <span
@@ -237,5 +272,18 @@ export function IssueLabel({ name, color }: { name: string; color?: string }) {
     >
       {name}
     </span>
+  );
+}
+
+/** Stat card chip for repo stats */
+export function StatChip({ icon, value, label }: { icon: React.ReactNode; value: string | number; label: string }) {
+  return (
+    <div className="stat-chip">
+      <span className="text-brand-500">{icon}</span>
+      <div>
+        <p className="text-sm font-bold text-gray-800 leading-none">{value}</p>
+        <p className="text-[10px] text-gray-500 mt-0.5">{label}</p>
+      </div>
+    </div>
   );
 }

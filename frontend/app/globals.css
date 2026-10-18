@@ -1,18 +1,20 @@
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800;900&family=JetBrains+Mono:wght@400;500;600&display=swap');
 
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
 
 /* ============================================================
-   FirstPatch AI — Design System
-   Dark-first, developer-focused aesthetic
+   FirstPatch AI — Premium Light SaaS Design System
+   Visual Reference: Ultra-clean, Lavender Glow & White Bento Cards
    ============================================================ */
 
 @layer base {
   :root {
-    --font-inter: 'Inter', system-ui, sans-serif;
-    --font-jetbrains: 'JetBrains Mono', Menlo, monospace;
+    --font-outfit: 'Outfit', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    --font-jetbrains: 'JetBrains Mono', Menlo, Monaco, Consolas, monospace;
+    --bg-page: #ebedf5;
+    --card-bg: #ffffff;
   }
 
   * {
@@ -26,85 +28,128 @@
   }
 
   body {
-    @apply bg-surface-950 text-gray-100 font-sans;
-    background-image: 
-      radial-gradient(ellipse at 20% 0%, rgba(99,102,241,0.08) 0%, transparent 60%),
-      radial-gradient(ellipse at 80% 100%, rgba(124,58,237,0.06) 0%, transparent 60%);
+    background-color: #ebedf5;
+    background-image:
+      radial-gradient(ellipse at 20% 0%, rgba(167, 139, 250, 0.15) 0%, transparent 50%),
+      radial-gradient(ellipse at 80% 15%, rgba(129, 140, 248, 0.12) 0%, transparent 45%),
+      radial-gradient(ellipse at 50% 80%, rgba(196, 181, 253, 0.10) 0%, transparent 60%);
     min-height: 100vh;
+    color: #1e1b4b;
+    font-family: var(--font-outfit);
   }
 
   ::selection {
-    @apply bg-brand-600 text-white;
+    background: #818cf8;
+    color: #ffffff;
   }
 
-  /* Scrollbar */
-  ::-webkit-scrollbar { width: 6px; height: 6px; }
-  ::-webkit-scrollbar-track { @apply bg-surface-900; }
-  ::-webkit-scrollbar-thumb { @apply bg-surface-600 rounded-full; }
-  ::-webkit-scrollbar-thumb:hover { @apply bg-surface-500; }
+  ::-webkit-scrollbar {
+    width: 6px;
+    height: 6px;
+  }
+  ::-webkit-scrollbar-track {
+    background: #e2e4f0;
+  }
+  ::-webkit-scrollbar-thumb {
+    background: #c4b5fd;
+    border-radius: 9999px;
+  }
+  ::-webkit-scrollbar-thumb:hover {
+    background: #8b5cf6;
+  }
 }
 
 @layer components {
-  /* ---- Cards ---- */
+  /* ---- Bento & SaaS Cards ---- */
   .card {
-    @apply bg-surface-850 border border-white/[0.06] rounded-xl shadow-card;
-    background-image: var(--tw-gradient-stops, none);
+    @apply bg-white rounded-[28px] border border-black/[0.04] transition-all duration-300;
+    box-shadow: 0 4px 20px -2px rgba(100, 116, 139, 0.08), 0 1px 3px rgba(0, 0, 0, 0.02);
   }
 
   .card-hover {
-    @apply card transition-all duration-200 hover:shadow-card-hover hover:border-white/[0.1];
+    @apply card hover:-translate-y-1 hover:shadow-card-hover;
+  }
+
+  /* ---- Visual Panels (Pale lavender / soft purple gradient) ---- */
+  .visual-panel {
+    @apply relative rounded-[22px] overflow-hidden border border-white/60 p-5 flex flex-col justify-center items-center;
+    background: linear-gradient(135deg, #ede9fe 0%, #e0e7ff 50%, #ede9fe 100%);
+    box-shadow: inset 0 2px 4px rgba(255, 255, 255, 0.8), 0 2px 10px rgba(139, 92, 246, 0.06);
+  }
+
+  .visual-panel-purple {
+    @apply relative rounded-[22px] overflow-hidden border border-white/60 p-5 flex flex-col justify-center items-center;
+    background: linear-gradient(145deg, #f3e8ff 0%, #e9d5ff 40%, #e0e7ff 100%);
+    box-shadow: inset 0 2px 4px rgba(255, 255, 255, 0.8), 0 2px 10px rgba(139, 92, 246, 0.08);
   }
 
   .card-brand {
-    @apply card border-brand-500/30 shadow-brand-sm;
-    background-image: var(--card-glow, radial-gradient(ellipse at 50% 0%, rgba(99,102,241,0.12) 0%, transparent 70%));
+    @apply card border-brand-200/50 p-6 sm:p-8;
+    background: linear-gradient(135deg, #ffffff 0%, #fdfcff 60%, #f5f3ff 100%);
+    box-shadow: 0 10px 30px -5px rgba(99, 102, 241, 0.08), 0 1px 3px rgba(0, 0, 0, 0.02);
+  }
+
+  /* ---- Floating Glass Pills ---- */
+  .floating-pill {
+    @apply flex items-center justify-between px-3.5 py-2 rounded-full bg-white/80 backdrop-blur-md border border-white/80 shadow-[0_2px_8px_rgba(0,0,0,0.04)] text-xs font-semibold text-gray-700 transition-all duration-200;
+  }
+
+  .floating-pill-active {
+    @apply flex items-center justify-between px-4 py-2.5 rounded-full bg-gray-900 text-white shadow-[0_4px_14px_rgba(0,0,0,0.18)] text-xs font-bold transition-all duration-200;
+  }
+
+  /* ---- AI Glow Dials & Metallic Rings ---- */
+  .ai-dial {
+    @apply relative w-16 h-16 rounded-full flex items-center justify-center font-extrabold text-white text-base shadow-xl;
+    background: linear-gradient(135deg, #1e1b4b 0%, #312e81 60%, #4338ca 100%);
+    box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.3), 0 8px 24px -2px rgba(79, 70, 229, 0.45);
+  }
+
+  .ai-dial-ring {
+    @apply absolute rounded-full border border-purple-400/30;
   }
 
   /* ---- Buttons ---- */
   .btn {
-    @apply inline-flex items-center gap-2 px-4 py-2 rounded-lg font-medium text-sm
-           transition-all duration-150 focus:outline-none focus:ring-2 focus:ring-brand-500/50
+    @apply inline-flex items-center gap-2 px-5 py-2.5 rounded-2xl font-semibold text-sm
+           transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-brand-400/40
            disabled:opacity-50 disabled:cursor-not-allowed;
   }
 
   .btn-primary {
-    @apply btn bg-brand-gradient text-white shadow-brand-sm
-           hover:shadow-brand-md hover:scale-[1.02] active:scale-[0.98];
+    @apply btn text-white shadow-[0_4px_16px_rgba(124,58,237,0.35)]
+           hover:shadow-[0_6px_22px_rgba(124,58,237,0.45)] hover:scale-[1.01] active:scale-[0.99];
+    background: linear-gradient(135deg, #6366f1 0%, #7c3aed 100%);
   }
 
   .btn-secondary {
-    @apply btn bg-surface-700 text-gray-200 border border-white/[0.08]
-           hover:bg-surface-600 hover:border-white/[0.12];
+    @apply btn bg-white text-gray-700 border border-gray-200/80 shadow-sm
+           hover:bg-gray-50 hover:border-brand-300 hover:text-brand-700;
   }
 
   .btn-ghost {
-    @apply btn text-gray-400 hover:text-gray-200 hover:bg-surface-800;
-  }
-
-  .btn-danger {
-    @apply btn bg-status-error/20 text-status-error border border-status-error/30
-           hover:bg-status-error/30;
+    @apply btn text-brand-600 hover:text-brand-800 hover:bg-brand-50/70;
   }
 
   /* ---- Inputs ---- */
   .input {
-    @apply w-full px-4 py-3 bg-surface-800 border border-white/[0.08] rounded-lg
-           text-gray-100 placeholder-gray-500 text-sm
-           focus:outline-none focus:ring-2 focus:ring-brand-500/40 focus:border-brand-500/50
-           transition-all duration-150;
+    @apply w-full px-4 py-3 bg-white border border-gray-200/90 rounded-2xl
+           text-gray-900 placeholder-gray-400 text-sm font-medium
+           focus:outline-none focus:ring-2 focus:ring-brand-400/30 focus:border-brand-400
+           transition-all duration-200 shadow-[0_1px_3px_rgba(0,0,0,0.02)];
   }
 
   /* ---- Badges ---- */
   .badge {
-    @apply inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium;
+    @apply inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-semibold;
   }
 
-  .badge-success { @apply badge bg-status-success/15 text-status-success border border-status-success/25; }
-  .badge-warning { @apply badge bg-status-warning/15 text-status-warning border border-status-warning/25; }
-  .badge-error   { @apply badge bg-status-error/15   text-status-error   border border-status-error/25;   }
-  .badge-info    { @apply badge bg-status-info/15    text-status-info    border border-status-info/25;    }
-  .badge-muted   { @apply badge bg-surface-700 text-gray-400 border border-white/[0.06]; }
-  .badge-brand   { @apply badge bg-brand-500/15 text-brand-300 border border-brand-500/25; }
+  .badge-success { @apply badge bg-emerald-50 text-emerald-700 border border-emerald-200/80; }
+  .badge-warning { @apply badge bg-amber-50 text-amber-700 border border-amber-200/80; }
+  .badge-error   { @apply badge bg-rose-50 text-rose-700 border border-rose-200/80; }
+  .badge-info    { @apply badge bg-sky-50 text-sky-700 border border-sky-200/80; }
+  .badge-muted   { @apply badge bg-gray-100 text-gray-600 border border-gray-200/80; }
+  .badge-brand   { @apply badge bg-brand-50 text-brand-700 border border-brand-200/80; }
 
   /* ---- Evidence indicators ---- */
   .evidence-verified  { @apply badge-success; }
@@ -119,67 +164,58 @@
   .difficulty-unknown      { @apply badge-muted; }
 
   /* ---- Score bar ---- */
-  .score-bar {
-    @apply h-1.5 rounded-full bg-surface-700 overflow-hidden;
-  }
-  .score-fill {
-    @apply h-full rounded-full bg-brand-gradient transition-all duration-500;
-  }
-
-  /* ---- Code blocks ---- */
-  .code-block {
-    @apply bg-surface-900 border border-white/[0.06] rounded-lg p-4
-           font-mono text-sm text-gray-300 overflow-x-auto;
-  }
+  .score-bar  { @apply h-2 rounded-full bg-gray-100 overflow-hidden; }
+  .score-fill { @apply h-full rounded-full transition-all duration-700; }
 
   /* ---- Section headings ---- */
   .section-label {
-    @apply text-xs font-semibold uppercase tracking-widest text-gray-500;
+    @apply text-xs font-bold uppercase tracking-wider text-gray-500;
   }
 
   /* ---- Skeleton loading ---- */
   .skeleton {
-    @apply animate-shimmer bg-gradient-to-r from-surface-800 via-surface-700 to-surface-800
-           bg-[length:200%_100%] rounded;
+    @apply animate-shimmer rounded-xl
+           bg-gradient-to-r from-gray-100 via-gray-200 to-gray-100
+           bg-[length:200%_100%];
   }
 
-  /* ---- Divider ---- */
-  .divider {
-    @apply border-t border-white/[0.06];
+  /* ---- Notice boxes ---- */
+  .notice         { @apply flex gap-3 p-4 rounded-2xl border text-sm; }
+  .notice-warning { @apply notice bg-amber-50/90 border-amber-200 text-amber-900; }
+  .notice-info    { @apply notice bg-sky-50/90 border-sky-200 text-sky-900; }
+  .notice-error   { @apply notice bg-rose-50/90 border-rose-200 text-rose-900; }
+  .notice-success { @apply notice bg-emerald-50/90 border-emerald-200 text-emerald-900; }
+
+  /* ---- Stat chip ---- */
+  .stat-chip {
+    @apply flex items-center gap-3 bg-white border border-gray-200/80 rounded-2xl px-4 py-2.5 shadow-[0_2px_8px_rgba(0,0,0,0.03)];
   }
 
-  /* ---- Warning/notice box ---- */
-  .notice {
-    @apply flex gap-3 p-4 rounded-lg border text-sm;
-  }
-  .notice-warning {
-    @apply notice bg-status-warning/10 border-status-warning/25 text-amber-200;
-  }
-  .notice-info {
-    @apply notice bg-status-info/10 border-status-info/25 text-blue-200;
-  }
-  .notice-error {
-    @apply notice bg-status-error/10 border-status-error/25 text-red-200;
-  }
-  .notice-success {
-    @apply notice bg-status-success/10 border-status-success/25 text-emerald-200;
+  /* ---- 3D Glossy Sphere ---- */
+  .glossy-sphere {
+    @apply rounded-full shadow-lg;
+    background: radial-gradient(circle at 35% 30%, #c4b5fd 0%, #8b5cf6 50%, #5b21b6 100%);
+    box-shadow: inset -2px -2px 6px rgba(0,0,0,0.2), inset 2px 2px 6px rgba(255,255,255,0.8), 0 8px 20px rgba(139, 92, 246, 0.3);
   }
 }
 
 @layer utilities {
   .text-gradient {
-    @apply bg-clip-text text-transparent bg-brand-gradient;
+    @apply bg-clip-text text-transparent;
+    background-image: linear-gradient(135deg, #4f46e5 0%, #7c3aed 100%);
   }
 
   .glow-brand {
-    text-shadow: 0 0 30px rgba(99,102,241,0.5);
+    filter: drop-shadow(0 0 20px rgba(124, 58, 237, 0.3));
   }
 
-  .border-gradient {
-    border-image: linear-gradient(135deg, #4f46e5, #7c3aed) 1;
-  }
+  .animate-in  { @apply animate-fade-in; }
+  .animate-up  { @apply animate-slide-up; }
 
-  .animate-in {
-    @apply animate-fade-in;
+  .glass {
+    backdrop-filter: blur(16px);
+    -webkit-backdrop-filter: blur(16px);
+    background: rgba(255, 255, 255, 0.82);
+    border: 1px solid rgba(255, 255, 255, 0.8);
   }
 }
