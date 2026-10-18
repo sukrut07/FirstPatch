@@ -211,4 +211,90 @@ def test_documentation_generator():
     assert os.path.exists(doc_res["documents"]["beginner_setup"])
     assert os.path.exists(doc_res["documents"]["contribution_guide"])
 
+def test_multidimensional_fit_and_investigation():
+    issue = {
+        "number": 42,
+        "title": "Fix unhandled KeyError in config",
+        "body": 'Traceback shows:\nFile "src/flask/config.py", line 42, in from_prefixed_env\nKeyError: "API_TIMEOUT"',
+        "labels": ["good first issue", "bug"],
+        "comments_count": 2
+    }
+    indexed_files = [
+        {"path": "src/flask/config.py", "is_test": 0},
+        {"path": "tests/test_config.py", "is_test": 1}
+    ]
+    eval_res = issue_service.evaluate_issue(
+        issue,
+        user_skill_level="Beginner",
+        user_interests=["web", "microframework"],
+        repo_metadata={"name": "flask"}
+    )
+    assert "technical_fit_score" in eval_res
+    assert "interest_fit_score" in eval_res
+    assert "evidence_confidence_score" in eval_res
+    assert "viability_score" in eval_res
+    assert "learning_value_score" in eval_res
+    assert eval_res["why_this_project"] is not None
+    assert eval_res["why_this_issue"] is not None
+
+    inv = issue_service.generate_grounded_investigation(
+        issue=issue,
+        repo_id="pallets/flask",
+        commit_sha="a1b2c3d4e5f67890",
+        indexed_files=indexed_files
+    )
+    assert len(inv["candidate_files"]) >= 1
+    assert inv["candidate_files"][0]["match_type"] == "STACKTRACE"
+    assert inv["candidate_files"][0]["status"] == "VERIFIED"
+    assert len(inv["known_facts"]) >= 1
+    assert any(f["status"] == "VERIFIED" for f in inv["known_facts"])
+    assert any(h["status"] == "INFERRED" for h in inv["inferred_hypotheses"])
+    assert any(u["status"] == "UNKNOWN" for u in inv["explicit_unknowns"])
+
+def test_maintainer_drafts_and_triage_persistence():
+    issue = {"number": 42, "title": "Fix unhandled KeyError"}
+    triage_notes = {
+        "user_summary": "Missing environment key raises KeyError",
+        "expected_behavior": "Return default fallback",
+        "actual_behavior": "Unhandled KeyError",
+        "reproduction_notes": "pytest tests/test_config.py"
+    }
+    drafts = issue_service.generate_maintainer_drafts(issue, triage_notes, "pallets/flask")
+    assert len(drafts) == 4
+    draft_types = [d["draft_type"] for d in drafts]
+    assert "ask_if_wanted" in draft_types
+    assert "request_clarification" in draft_types
+    assert "reproduction_report" in draft_types
+    assert "review_response" in draft_types
+
+    # Test triage & hypothesis database operations
+    with get_db() as conn:
+        cursor = conn.cursor()
+        cursor.execute("""
+        INSERT OR REPLACE INTO repositories (id, owner, name, created_at)
+        VALUES ('pallets/flask', 'pallets', 'flask', datetime('now'))
+        """)
+        cursor.execute("""
+        INSERT OR REPLACE INTO issues (id, repository_id, number, title, created_at)
+        VALUES ('pallets/flask:42', 'pallets/flask', 42, 'Fix unhandled KeyError', datetime('now'))
+        """)
+        cursor.execute("""
+        INSERT OR REPLACE INTO issue_triages (
+            id, issue_id, user_summary, expected_behavior, actual_behavior,
+            suspected_code_path, reproduction_notes, decision, decision_rationale,
+            created_at, updated_at
+        ) VALUES ('t1', 'pallets/flask:42', 'summary', 'expected', 'actual', 'src/config.py', 'repro', 'proceed', 'clear bug', datetime('now'), datetime('now'))
+        """)
+        cursor.execute("""
+        INSERT INTO hypothesis_logs (
+            id, issue_id, hypothesis, supporting_evidence, contradicting_evidence,
+            verification_method, status, remaining_uncertainty, created_at, updated_at
+        ) VALUES ('h1', 'pallets/flask:42', 'Missing default in dict.get', '["line 42"]', '[]', 'pytest', 'confirmed', 'none', datetime('now'), datetime('now'))
+        """)
+
+        cursor.execute("SELECT * FROM issue_triages WHERE issue_id='pallets/flask:42'")
+        assert cursor.fetchone()["decision"] == "proceed"
+        cursor.execute("SELECT * FROM hypothesis_logs WHERE issue_id='pallets/flask:42'")
+        assert cursor.fetchone()["status"] == "confirmed"
+
 

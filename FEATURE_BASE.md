@@ -218,3 +218,64 @@ Deterministic regex signatures identify common onboarding failures and propose s
 - **Archive Path Traversal Protection**: Tarball extraction checks against `os.path.commonpath` / `..` traversal.
 - **No Code Execution During Ingestion**: Repositories are analyzed statically via AST; no untrusted setup scripts are executed.
 - **Isolated Verification Subprocesses**: User-approved test runs execute in restricted subprocesses with strict timeouts and resource bounds.
+
+---
+
+## 10. Multi-Dimensional Issue & Project Viability Evaluation
+
+Rather than relying on generic `good first issue` labels or raw star counts, FirstPatch AI evaluates 5 independent dimensions:
+
+1. **Technical Fit (30%)**: Codebase complexity vs. contributor experience level, cross-module dependencies, and test availability.
+2. **Interest Fit (25%)**: Alignment with user's preferred technologies (`web`, `cli`, `ai`, `devtools`, `testing`).
+3. **Evidence Confidence (20%)**: Strength of deterministic proof (direct stack traces, explicit reproduction steps, exact symbol matches).
+4. **Contribution Viability (15%)**: Real-world openness (unassigned, no open PR addressing it, active repository commits).
+5. **Learning Value (10%)**: High-yield software engineering concepts the beginner will master.
+
+### The 4 Honest Questions
+Every recommended issue surfaces 4 explicit answers:
+- **Why this project?** Specific architectural or modular traits making it an ideal learning target.
+- **Why this issue?** Concrete scope, isolated blast radius, and achievable boundaries.
+- **Why is it suitable for me?** Match against current skill level and estimated effort.
+- **What should I verify first?** The exact command or file to inspect before writing any patch.
+
+---
+
+## 11. Trustworthy Issue-to-Code Investigation Workspace
+
+Located at `/repo/[owner]/[repo]/issues/[number]`, providing:
+- **Grounded Candidate Files**: Exact file paths, line ranges, symbol names, and match types (`STACKTRACE`, `AST_SYMBOL`, `GRAPH_EXPANSION`).
+- **Traceable Execution Flow**: Step-by-step dispatch path from parameter intake to failure point.
+- **Reality Checker Truth Matrix**:
+  - **`VERIFIED` Known Facts**: Statically proven from code.
+  - **`INFERRED` Hypotheses**: Plausible deductions from symptoms.
+  - **`UNKNOWN` Explicit Gaps**: Disclosing uncertainty rather than hallucinating facts.
+- **Alternative Explanations & Next Action**: Concrete next terminal or test command.
+
+---
+
+## 12. 6-Step Contributor Triage (Triage Before Code Generation)
+
+Beginners are guided through structured triage to prevent low-quality AI PR spam:
+1. **Restate the Problem**: Contributor articulates what fails in their own words.
+2. **Expected vs. Actual Behavior**: Pinpoints the exact behavioral delta.
+3. **Suspected Code Path**: Locates files and functions responsible.
+4. **Minimal Reproduction**: Identifies the smallest test command.
+5. **Hypothesis Log**:
+   - Records hypothesis, supporting evidence, and contradicting evidence.
+   - Updates status: `untested`, `confirmed`, `rejected`, or `inconclusive`.
+6. **Decision Gate**:
+   - 🟢 **Proceed to Implementation Plan**: When hypothesis is verified.
+   - 🟡 **Ask Maintainer First**: When requirements or conventions are ambiguous.
+   - 🔴 **Skip / Choose Another**: Responsible abandonment to avoid wasted effort.
+
+---
+
+## 13. Maintainer Communication Drafts (Etiquette & Community Respect)
+
+Generates 4 polite, respectful communication templates:
+1. **Ask if Fix is Wanted**: Inquires about current status before writing code.
+2. **Request Clarification**: Asks targeted questions on preferred resolution defaults.
+3. **Share Reproduction Report**: Provides clean, verifiable reproduction steps.
+4. **Respond to Code Review**: Constructively addresses maintainer PR feedback.
+> **Safety Rule:** These drafts are **never automatically posted** to GitHub. The human contributor reviews, customizes, and sends them through their own GitHub account.
+

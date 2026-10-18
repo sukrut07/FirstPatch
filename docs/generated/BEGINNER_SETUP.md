@@ -1,4 +1,4 @@
-# 🛠️ Beginner Development Environment Setup: pallets/flask
+# 🛠️ Beginner Development Environment Setup: octocat/Hello-World
 
 Follow these steps to set up a clean, reproducible development environment on your machine:
 
@@ -6,11 +6,11 @@ Follow these steps to set up a clean, reproducible development environment on yo
 ```bash
 # 1. Fork the repo on GitHub to your username
 # 2. Clone your personal fork locally:
-git clone https://github.com/YOUR_USERNAME/flask.git
-cd flask
+git clone https://github.com/YOUR_USERNAME/Hello-World.git
+cd Hello-World
 
 # 3. Add the official upstream remote:
-git remote add upstream https://github.com/pallets/flask.git
+git remote add upstream None.git
 ```
 
 ## Step 2: Create a Working Branch

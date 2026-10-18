@@ -557,7 +557,7 @@ export default function RepoWorkspacePage({
                   </div>
 
                   {/* Actions */}
-                  <div className="border-t border-zinc-800 pt-3 flex items-center justify-between">
+                  <div className="border-t border-zinc-800 pt-3 flex items-center justify-between gap-2">
                     <a
                       href={issue.html_url}
                       target="_blank"
@@ -567,23 +567,24 @@ export default function RepoWorkspacePage({
                       Original Issue <ExternalLink className="h-3 w-3" />
                     </a>
 
-                    <button
-                      onClick={() => handleStartContribution(issue)}
-                      disabled={isPlanning}
-                      className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-emerald-500 hover:bg-emerald-400 text-zinc-950 font-semibold text-xs transition-colors cursor-pointer disabled:opacity-50"
-                    >
-                      {isPlanning ? (
-                        <>
-                          <span className="h-3 w-3 border-2 border-zinc-950 border-t-transparent rounded-full animate-spin"></span>
-                          Generating Plan...
-                        </>
-                      ) : (
-                        <>
-                          Start Contribution Plan
-                          <ArrowRight className="h-3 w-3" />
-                        </>
-                      )}
-                    </button>
+                    <div className="flex items-center gap-2">
+                      <Link
+                        href={`/repo/${owner}/${repo}/issues/${issue.number}`}
+                        className="inline-flex items-center gap-1 px-3 py-1.5 rounded-lg bg-emerald-500 hover:bg-emerald-400 text-zinc-950 font-semibold text-xs transition-colors cursor-pointer"
+                      >
+                        <Compass className="h-3 w-3" />
+                        Investigate & Triage
+                      </Link>
+
+                      <button
+                        onClick={() => handleStartContribution(issue)}
+                        disabled={isPlanning}
+                        className="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-lg bg-zinc-800 hover:bg-zinc-700 text-zinc-300 font-medium text-xs transition-colors cursor-pointer disabled:opacity-50"
+                        title="Skip triage and directly generate implementation plan"
+                      >
+                        {isPlanning ? "Planning..." : "Plan →"}
+                      </button>
+                    </div>
                   </div>
                 </div>
               );

@@ -1,4 +1,4 @@
-# 📜 Contribution Guidelines: pallets/flask
+# 📜 Contribution Guidelines: octocat/Hello-World
 
 Follow these project conventions to ensure your pull request is welcomed and quickly merged by maintainers:
 

@@ -174,6 +174,11 @@ def init_db() -> None:
             issue_id TEXT NOT NULL,
             repository_id TEXT NOT NULL,
             fit_score REAL DEFAULT 0.0,
+            technical_fit_score REAL DEFAULT 0.0,
+            interest_fit_score REAL DEFAULT 0.0,
+            evidence_confidence_score REAL DEFAULT 0.0,
+            viability_score REAL DEFAULT 0.0,
+            learning_value_score REAL DEFAULT 0.0,
             skill_match TEXT,
             estimated_complexity TEXT,
             estimated_effort TEXT,
@@ -183,6 +188,80 @@ def init_db() -> None:
             prerequisite_skills TEXT,
             confidence TEXT,
             missing_info TEXT,
+            why_this_project TEXT,
+            why_this_issue TEXT,
+            what_to_verify_first TEXT,
+            grounded_investigation TEXT,
+            created_at TEXT NOT NULL,
+            FOREIGN KEY (issue_id) REFERENCES issues(id) ON DELETE CASCADE
+        )
+        """)
+        
+        # Idempotently add any new columns to existing issue_recommendations table
+        cursor.execute("PRAGMA table_info(issue_recommendations)")
+        rec_cols = {row["name"] for row in cursor.fetchall()}
+        migration_cols = [
+            ("technical_fit_score", "REAL DEFAULT 0.0"),
+            ("interest_fit_score", "REAL DEFAULT 0.0"),
+            ("evidence_confidence_score", "REAL DEFAULT 0.0"),
+            ("viability_score", "REAL DEFAULT 0.0"),
+            ("learning_value_score", "REAL DEFAULT 0.0"),
+            ("why_this_project", "TEXT"),
+            ("why_this_issue", "TEXT"),
+            ("what_to_verify_first", "TEXT"),
+            ("grounded_investigation", "TEXT")
+        ]
+        for col_name, col_def in migration_cols:
+            if col_name not in rec_cols:
+                try:
+                    cursor.execute(f"ALTER TABLE issue_recommendations ADD COLUMN {col_name} {col_def}")
+                except Exception:
+                    pass
+
+        # 7b. Hypothesis Logs
+        cursor.execute("""
+        CREATE TABLE IF NOT EXISTS hypothesis_logs (
+            id TEXT PRIMARY KEY,
+            issue_id TEXT NOT NULL,
+            workspace_id TEXT,
+            hypothesis TEXT NOT NULL,
+            supporting_evidence TEXT,
+            contradicting_evidence TEXT,
+            verification_method TEXT,
+            status TEXT DEFAULT 'untested',
+            remaining_uncertainty TEXT,
+            created_at TEXT NOT NULL,
+            updated_at TEXT NOT NULL,
+            FOREIGN KEY (issue_id) REFERENCES issues(id) ON DELETE CASCADE
+        )
+        """)
+
+        # 7c. Issue Triages
+        cursor.execute("""
+        CREATE TABLE IF NOT EXISTS issue_triages (
+            id TEXT PRIMARY KEY,
+            issue_id TEXT NOT NULL UNIQUE,
+            user_summary TEXT,
+            expected_behavior TEXT,
+            actual_behavior TEXT,
+            suspected_code_path TEXT,
+            reproduction_notes TEXT,
+            decision TEXT DEFAULT 'undecided',
+            decision_rationale TEXT,
+            created_at TEXT NOT NULL,
+            updated_at TEXT NOT NULL,
+            FOREIGN KEY (issue_id) REFERENCES issues(id) ON DELETE CASCADE
+        )
+        """)
+
+        # 7d. Maintainer Communication Drafts
+        cursor.execute("""
+        CREATE TABLE IF NOT EXISTS maintainer_drafts (
+            id TEXT PRIMARY KEY,
+            issue_id TEXT NOT NULL,
+            draft_type TEXT NOT NULL,
+            subject TEXT NOT NULL,
+            body TEXT NOT NULL,
             created_at TEXT NOT NULL,
             FOREIGN KEY (issue_id) REFERENCES issues(id) ON DELETE CASCADE
         )

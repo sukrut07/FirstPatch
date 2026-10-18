@@ -252,3 +252,51 @@ export async function runModelBenchmark(model?: string) {
   return await res.json();
 }
 
+export async function getIssueInvestigation(owner: string, repo: string, number: number) {
+  const res = await fetch(`${API_BASE}/api/issues/${owner}/${repo}/${number}/investigation`, { cache: "no-store" });
+  if (!res.ok) throw new Error("Failed to load issue investigation.");
+  return await res.json();
+}
+
+export async function getIssueTriage(owner: string, repo: string, number: number) {
+  const res = await fetch(`${API_BASE}/api/issues/${owner}/${repo}/${number}/triage`, { cache: "no-store" });
+  if (!res.ok) throw new Error("Failed to load issue triage.");
+  return await res.json();
+}
+
+export async function saveIssueTriage(owner: string, repo: string, number: number, triageData: any) {
+  const res = await fetch(`${API_BASE}/api/issues/${owner}/${repo}/${number}/triage`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(triageData)
+  });
+  if (!res.ok) throw new Error("Failed to save triage notes.");
+  return await res.json();
+}
+
+export async function addIssueHypothesis(owner: string, repo: string, number: number, data: any) {
+  const res = await fetch(`${API_BASE}/api/issues/${owner}/${repo}/${number}/hypotheses`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(data)
+  });
+  if (!res.ok) throw new Error("Failed to add hypothesis.");
+  return await res.json();
+}
+
+export async function updateIssueHypothesisStatus(owner: string, repo: string, number: number, hypoId: string, status: string, uncertainty?: string) {
+  const res = await fetch(`${API_BASE}/api/issues/${owner}/${repo}/${number}/hypotheses/${hypoId}`, {
+    method: "PATCH",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ status, remaining_uncertainty: uncertainty })
+  });
+  if (!res.ok) throw new Error("Failed to update hypothesis.");
+  return await res.json();
+}
+
+export async function getMaintainerDrafts(owner: string, repo: string, number: number) {
+  const res = await fetch(`${API_BASE}/api/issues/${owner}/${repo}/${number}/maintainer-drafts`, { cache: "no-store" });
+  if (!res.ok) throw new Error("Failed to load maintainer communication drafts.");
+  return await res.json();
+}
+
