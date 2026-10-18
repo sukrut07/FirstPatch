@@ -23,8 +23,6 @@ Also validates critical failure paths:
  - Container unavailable state is recorded explicitly as UNAVAILABLE without fabrication.
 """
 
-from typing import Any, Dict
-import pytest
 
 from app.services.trust.claims import (
     Claim,
@@ -225,10 +223,10 @@ def test_e2e_successful_contribution_workflow():
 
     # Step 12: Record Flight Receipt events
     recorder = ContributionReceiptRecorder(repository, commit_sha)
-    e0 = recorder.record_event("genesis", "INIT")
-    e1 = recorder.record_event("policy_radar", "DISCLOSURE_REQUIRED", policy_report_ref="ev_pol_1")
-    e2 = recorder.record_event("claim_guard", "AVAILABLE")
-    e3 = recorder.record_event(
+    recorder.record_event("genesis", "INIT")
+    recorder.record_event("policy_radar", "DISCLOSURE_REQUIRED", policy_report_ref="ev_pol_1")
+    recorder.record_event("claim_guard", "AVAILABLE")
+    recorder.record_event(
         "verification",
         "EXECUTED_PASS",
         verification_driver="docker_isolated",

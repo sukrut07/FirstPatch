@@ -7,7 +7,6 @@ Audits:
 - Review Memory: real PR links, 2-witness minimum threshold, duplicate comment rejection, sampling limits.
 """
 
-import pytest
 
 from app.services.trust.claims import (
     Claim,

@@ -28,25 +28,21 @@ Covers all 25 deterministic security fixtures required by Phase 5 Master Specifi
 25. Stale evidence following a repository change.
 """
 
-import copy
 import pytest
-from pydantic import ValidationError
 
 from app.services.trust.claims import (
     Claim,
     ClaimType,
     Verdict,
     VerdictStatus,
-    compute_verdict_seal,
 )
-from app.services.trust.fact_store import FactStore, normalize_repo_path
+from app.services.trust.fact_store import FactStore
 from app.services.trust.kernel import CheckerKernel
 from app.services.trust.render import TrustedRenderer
 from app.services.trust.receipt import (
     ContributionReceiptRecorder,
     verify_receipt_chain,
 )
-from app.services.policy_radar.service import PolicyRadarService, AIPolicyStatus
 from app.services.claim_guard.service import ClaimGuardService, IssueReadinessStatus
 from app.services.trust.review_memory import ReviewMemoryService
 

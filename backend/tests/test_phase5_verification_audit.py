@@ -16,14 +16,12 @@ Tests all verification execution driver states, safety constraints, and Docker-u
  - Mock driver cannot produce an EXECUTED_PASS receipt.
 """
 
-import asyncio
 from uuid import uuid4
 import pytest
 
 from app.schemas.verification import (
     ExecutionStatus,
     RuntimeProfile,
-    VerificationInfrastructureHealth,
     VerificationRunRecord,
     VerificationRunRequest,
 )

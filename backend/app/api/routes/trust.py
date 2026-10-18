@@ -25,6 +25,7 @@ from app.services.trust.pr_pack import PRPackage, PRPackageGenerator
 from app.services.trust.review_memory import ReviewMemoryService, ReviewThemeResult
 from app.services.trust.blast_radius import BlastRadiusAnalyzer, BlastRadiusReport
 from app.services.trust.fuzz import KernelMutationFuzzer, MutationSuiteReport
+from app.services.trust.demo_fixture import SyntheticDemoPackage, generate_synthetic_demo_package
 
 router = APIRouter(prefix="/api/trust", tags=["Trust & Proof-Carrying Contributions"])
 
@@ -335,3 +336,15 @@ def run_kernel_fuzz(req: EvaluateClaimsRequest):
         repository=req.repository,
         authoritative_sha=req.authoritative_sha,
     )
+
+
+@router.get("/demo-fixture", response_model=SyntheticDemoPackage)
+def get_synthetic_demo_fixture():
+    """Returns a deterministic, labeled synthetic demo package.
+
+    Demonstrates verified, refuted, stale, and unknown claims, policy handling,
+    safe UNAVAILABLE execution status, and receipt tampering detection.
+    Explicitly marked with is_synthetic: True.
+    """
+    return generate_synthetic_demo_package()
+

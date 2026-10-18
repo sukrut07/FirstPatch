@@ -17,7 +17,6 @@ Validates bounding constraints:
 """
 
 import time
-import pytest
 
 from app.services.trust.fact_store import FactStore
 from app.services.trust.claims import Claim, ClaimType

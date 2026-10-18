@@ -136,3 +136,20 @@ def test_trust_api_receipt_and_fuzz():
     )
     assert rec_resp.status_code == 200
     assert rec_resp.json()["is_valid"] is False  # Tampered dummy hash detected
+
+
+def test_trust_api_demo_fixture():
+    resp = client.get("/api/trust/demo-fixture")
+    assert resp.status_code == 200
+    data = resp.json()
+    assert data["is_synthetic"] is True
+    assert "SYNTHETIC DEMO FIXTURE" in data["notice"]
+    assert data["verified_claim_example"]["verdict"]["status"] == "VERIFIED"
+    assert data["refuted_claim_example"]["verdict"]["status"] == "REFUTED"
+    assert data["stale_claim_example"]["verdict"]["status"] == "STALE"
+    assert data["unknown_claim_example"]["verdict"]["status"] == "UNKNOWN"
+    assert data["prohibited_ai_policy_report"]["ai_policy"] == "banned"
+    assert data["unavailable_verification_example"]["status"] == "UNAVAILABLE"
+    assert data["valid_receipt_report"]["is_valid"] is True
+    assert data["tampered_receipt_report"]["is_valid"] is False
+
