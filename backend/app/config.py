@@ -11,8 +11,8 @@ class Settings(BaseSettings):
     
     # Ollama Local AI Configuration
     OLLAMA_BASE_URL: str = "http://127.0.0.1:11434"
-    OLLAMA_MODEL: str = "gemma2:2b"
-    OLLAMA_FALLBACK_MODEL: str = "qwen2.5-coder:3b"
+    OLLAMA_MODEL: str = "gemma4:e2b"
+    OLLAMA_FALLBACK_MODEL: str = "gemma2:2b"
     OLLAMA_EMBED_MODEL: str = "nomic-embed-text"
     
     MODEL_CONTEXT_TOKENS: int = 8192
