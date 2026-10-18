@@ -8,12 +8,21 @@ from backend.app.services.github_service import github_service, parse_repo_ident
 from backend.app.services.chunking_service import chunk_file_content
 from backend.app.services.ast_service import analyze_python_source, analyze_generic_source
 from backend.app.services.documentation_service import documentation_service
+from backend.app.services.cloud_llm_service import cloud_llm_service
 from backend.app.database import get_db, get_iso_now
 
 router = APIRouter(prefix="/api/repositories", tags=["Repositories"])
 
 class AnalyzeRepoRequest(BaseModel):
     url: str
+    api_key: Optional[str] = None
+    provider: Optional[str] = None
+    model: Optional[str] = None
+
+class ReAnalyzeAiRequest(BaseModel):
+    api_key: Optional[str] = None
+    provider: Optional[str] = None
+    model: Optional[str] = None
 
 @router.post("/analyze")
 async def analyze_repository(req: AnalyzeRepoRequest):
@@ -101,12 +110,16 @@ async def analyze_repository(req: AnalyzeRepoRequest):
     # Bound to top 15 priority files for responsive analysis
     indexed_file_count = 0
     total_chunks_created = 0
+    key_files_map: Dict[str, str] = {}
+    ast_summary_map: Dict[str, Any] = {"modules": [], "entrypoints": [], "test_functions": 0}
 
     for file_path in priority_files[:15]:
         try:
             content = await github_service.get_raw_file_content(owner, repo, file_path, branch=meta["default_branch"])
             if not content:
                 continue
+
+            key_files_map[file_path] = content
 
             # Analyze AST
             is_py = file_path.endswith(".py")
@@ -118,6 +131,18 @@ async def analyze_repository(req: AnalyzeRepoRequest):
             is_test = 1 if ("test" in file_path.lower() or ast_data.get("test_functions")) else 0
             is_config = 1 if any(c in file_path.lower() for c in ["config", "setup", "toml", "json", "yaml"]) else 0
             is_entry = 1 if any(e in file_path.lower() for e in ["main.py", "app.py", "index.ts", "index.js"]) else 0
+
+            ast_summary_map["modules"].append({
+                "path": file_path,
+                "classes": [c.get("name") for c in ast_data.get("classes", [])],
+                "functions": [f.get("name") for f in ast_data.get("functions", [])][:10],
+                "is_entry": bool(is_entry),
+                "is_test": bool(is_test)
+            })
+            if is_entry:
+                ast_summary_map["entrypoints"].append(file_path)
+            if is_test:
+                ast_summary_map["test_functions"] += len(ast_data.get("test_functions", []))
 
             # Insert repository_file
             with get_db() as conn:
@@ -161,6 +186,33 @@ async def analyze_repository(req: AnalyzeRepoRequest):
         except Exception:
             continue
 
+    # 5. Execute Gemma 4 AI Architecture & Repository Analysis
+    ai_analysis_res = None
+    try:
+        ai_analysis_res = await cloud_llm_service.gemma_analyze_repository(
+            repo_metadata=meta,
+            file_tree=tree,
+            key_files=key_files_map,
+            ast_summary=ast_summary_map,
+            api_key=req.api_key,
+            provider=req.provider,
+            model=req.model
+        )
+        if ai_analysis_res:
+            with get_db() as conn:
+                cursor = conn.cursor()
+                cursor.execute("""
+                UPDATE repositories
+                SET ai_analysis = ?, ai_analysis_model = ?
+                WHERE id = ?
+                """, (
+                    json.dumps(ai_analysis_res),
+                    ai_analysis_res.get("model_used", "gemma-4"),
+                    repo_id
+                ))
+    except Exception:
+        pass
+
     return {
         "status": "success",
         "repository_id": repo_id,
@@ -170,7 +222,8 @@ async def analyze_repository(req: AnalyzeRepoRequest):
         "total_files_discovered": len(tree),
         "files_indexed": indexed_file_count,
         "code_chunks_indexed": total_chunks_created,
-        "metadata": meta
+        "metadata": meta,
+        "ai_analysis": ai_analysis_res
     }
 
 @router.get("")
@@ -192,6 +245,11 @@ async def list_repositories():
                 item["topics"] = json.loads(item["topics"])
             except Exception:
                 item["topics"] = []
+            if item.get("ai_analysis"):
+                try:
+                    item["ai_analysis"] = json.loads(item["ai_analysis"])
+                except Exception:
+                    pass
             item["is_saved"] = bool(item.get("is_saved", 0))
             result.append(item)
         return result
@@ -210,6 +268,12 @@ async def get_repository(owner: str, repo: str):
             item["topics"] = json.loads(item["topics"])
         except Exception:
             item["topics"] = []
+
+        if item.get("ai_analysis"):
+            try:
+                item["ai_analysis"] = json.loads(item["ai_analysis"])
+            except Exception:
+                pass
         
         # Get count of indexed files & chunks
         cursor.execute("SELECT COUNT(*) as cnt FROM repository_files WHERE repository_id = ?", (repo_id,))
@@ -355,4 +419,115 @@ async def get_repository_docs(owner: str, repo: str):
         "repository_id": repo_id,
         "available_documents": docs
     }
+
+@router.post("/{owner}/{repo}/ai-analyze")
+async def reanalyze_repository_with_ai(owner: str, repo: str, req: Optional[ReAnalyzeAiRequest] = None):
+    """
+    Triggers or refreshes a full Gemma 4 AI architecture and repository intelligence analysis.
+    Uses the user-provided API key or falls back to server env / local Ollama / grounded baseline.
+    """
+    repo_id = f"{owner}/{repo}"
+    with get_db() as conn:
+        cursor = conn.cursor()
+        cursor.execute("SELECT * FROM repositories WHERE id = ?", (repo_id,))
+        row = cursor.fetchone()
+        if not row:
+            raise HTTPException(status_code=404, detail="Repository not found. Please analyze repository files first.")
+        repo_data = dict(row)
+
+        cursor.execute("""
+        SELECT path, content, parsed_metadata, is_entrypoint, is_test
+        FROM repository_files
+        WHERE repository_id = ?
+        ORDER BY size_bytes DESC
+        """, (repo_id,))
+        file_rows = cursor.fetchall()
+
+    tree = [{"path": r["path"], "size": len(r["content"].encode("utf-8")) if r["content"] else 0} for r in file_rows]
+    key_files_map = {r["path"]: r["content"] for r in file_rows if r["content"]}
+    ast_summary_map = {"modules": [], "entrypoints": [], "test_functions": 0}
+
+    for r in file_rows:
+        meta = {}
+        try:
+            meta = json.loads(r["parsed_metadata"]) if r["parsed_metadata"] else {}
+        except Exception:
+            pass
+        ast_summary_map["modules"].append({
+            "path": r["path"],
+            "classes": [c.get("name") for c in meta.get("classes", [])],
+            "functions": [f.get("name") for f in meta.get("functions", [])][:10],
+            "is_entry": bool(r["is_entrypoint"]),
+            "is_test": bool(r["is_test"])
+        })
+        if r["is_entrypoint"]:
+            ast_summary_map["entrypoints"].append(r["path"])
+        if r["is_test"]:
+            ast_summary_map["test_functions"] += len(meta.get("test_functions", []))
+
+    api_key = req.api_key if req else None
+    provider = req.provider if req else None
+    model = req.model if req else None
+
+    analysis_res = await cloud_llm_service.gemma_analyze_repository(
+        repo_metadata=repo_data,
+        file_tree=tree,
+        key_files=key_files_map,
+        ast_summary=ast_summary_map,
+        api_key=api_key,
+        provider=provider,
+        model=model
+    )
+
+    with get_db() as conn:
+        cursor = conn.cursor()
+        cursor.execute("""
+        UPDATE repositories
+        SET ai_analysis = ?, ai_analysis_model = ?
+        WHERE id = ?
+        """, (
+            json.dumps(analysis_res),
+            analysis_res.get("model_used", "gemma-4"),
+            repo_id
+        ))
+
+    return {
+        "status": "success",
+        "repository_id": repo_id,
+        "ai_analysis": analysis_res,
+        "model_used": analysis_res.get("model_used", "gemma-4"),
+        "provider_used": analysis_res.get("provider_used", "AI Studio / Gemma")
+    }
+
+@router.get("/{owner}/{repo}/ai-analysis")
+async def get_repository_ai_analysis(owner: str, repo: str):
+    """
+    Retrieves the stored Gemma 4 AI architecture analysis, or generates one if not yet present.
+    """
+    repo_id = f"{owner}/{repo}"
+    with get_db() as conn:
+        cursor = conn.cursor()
+        cursor.execute("SELECT ai_analysis, ai_analysis_model FROM repositories WHERE id = ?", (repo_id,))
+        row = cursor.fetchone()
+        if not row:
+            raise HTTPException(status_code=404, detail="Repository not found.")
+        
+        raw_analysis = row["ai_analysis"]
+        model = row["ai_analysis_model"]
+
+    if not raw_analysis:
+        return await reanalyze_repository_with_ai(owner, repo, None)
+
+    try:
+        parsed = json.loads(raw_analysis)
+    except Exception:
+        parsed = {"executive_summary": raw_analysis}
+
+    return {
+        "status": "success",
+        "repository_id": repo_id,
+        "ai_analysis": parsed,
+        "model_used": model
+    }
+
 

@@ -52,10 +52,21 @@ def init_db() -> None:
             status TEXT DEFAULT 'ready',
             analysis_summary TEXT,
             analysis_limitations TEXT,
+            ai_analysis TEXT,
+            ai_analysis_model TEXT,
             last_analyzed_at TEXT,
             created_at TEXT NOT NULL
         )
         """)
+        
+        try:
+            cursor.execute("ALTER TABLE repositories ADD COLUMN ai_analysis TEXT")
+        except Exception:
+            pass
+        try:
+            cursor.execute("ALTER TABLE repositories ADD COLUMN ai_analysis_model TEXT")
+        except Exception:
+            pass
         
         # 2. Repository Snapshots
         cursor.execute("""

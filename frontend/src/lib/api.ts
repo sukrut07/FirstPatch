@@ -60,6 +60,23 @@ export async function testModelInference() {
   return data;
 }
 
+export async function testCloudApiKey(apiKey: string, provider?: string, model?: string) {
+  const res = await fetch(apiUrl("/api/models/test-cloud-key"), {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      api_key: apiKey,
+      provider: provider || undefined,
+      model: model || undefined
+    })
+  });
+  const data = await res.json();
+  if (!res.ok) {
+    throw new Error(data.detail || "Failed to verify cloud API key.");
+  }
+  return data;
+}
+
 export async function updateActiveModel(modelName: string) {
   const res = await fetch(apiUrl("/api/settings/models"), {
     method: "PATCH",
@@ -73,15 +90,84 @@ export async function updateActiveModel(modelName: string) {
   return await res.json();
 }
 
-export async function analyzeRepository(url: string) {
+export async function analyzeRepository(
+  url: string,
+  options?: { apiKey?: string; provider?: string; model?: string }
+) {
+  let apiKey = options?.apiKey;
+  let provider = options?.provider;
+  let model = options?.model;
+
+  if (typeof window !== "undefined") {
+    if (!apiKey) {
+      apiKey = localStorage.getItem("firstpatch_gemma_api_key") || localStorage.getItem("firstpatch_api_key") || undefined;
+    }
+    if (!provider) {
+      provider = localStorage.getItem("firstpatch_provider") || (apiKey?.startsWith("AIza") ? "google_ai_studio" : undefined);
+    }
+    if (!model) {
+      model = localStorage.getItem("firstpatch_model") || undefined;
+    }
+  }
+
   const res = await fetch(apiUrl("/api/repositories/analyze"), {
     method: "POST",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ url })
+    body: JSON.stringify({
+      url,
+      api_key: apiKey || undefined,
+      provider: provider || undefined,
+      model: model || undefined
+    })
   });
   if (!res.ok) {
     const err = await res.json().catch(() => ({ detail: "Analysis failed." }));
     throw new Error(err.detail || "Failed to analyze repository.");
+  }
+  return await res.json();
+}
+
+export async function reanalyzeRepositoryWithGemma(
+  owner: string,
+  repo: string,
+  options?: { apiKey?: string; provider?: string; model?: string }
+) {
+  let apiKey = options?.apiKey;
+  let provider = options?.provider;
+  let model = options?.model;
+
+  if (typeof window !== "undefined") {
+    if (!apiKey) {
+      apiKey = localStorage.getItem("firstpatch_gemma_api_key") || localStorage.getItem("firstpatch_api_key") || undefined;
+    }
+    if (!provider) {
+      provider = localStorage.getItem("firstpatch_provider") || (apiKey?.startsWith("AIza") ? "google_ai_studio" : undefined);
+    }
+    if (!model) {
+      model = localStorage.getItem("firstpatch_model") || undefined;
+    }
+  }
+
+  const res = await fetch(apiUrl(`/api/repositories/${owner}/${repo}/ai-analyze`), {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      api_key: apiKey || undefined,
+      provider: provider || undefined,
+      model: model || undefined
+    })
+  });
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({ detail: "Gemma 4 AI analysis failed." }));
+    throw new Error(err.detail || "Failed to run Gemma 4 repository analysis.");
+  }
+  return await res.json();
+}
+
+export async function getRepoAiAnalysis(owner: string, repo: string) {
+  const res = await fetch(apiUrl(`/api/repositories/${owner}/${repo}/ai-analysis`), { cache: "no-store" });
+  if (!res.ok) {
+    throw new Error("Failed to fetch repository AI analysis.");
   }
   return await res.json();
 }

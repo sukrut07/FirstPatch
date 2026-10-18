@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { analyzeRepository } from "@/lib/api";
@@ -16,7 +16,12 @@ import {
   FileCode2, 
   GitPullRequest, 
   Stethoscope,
-  Compass
+  Compass,
+  Key,
+  ChevronDown,
+  ChevronUp,
+  ExternalLink,
+  Zap
 } from "lucide-react";
 
 export default function LandingPage() {
@@ -25,6 +30,21 @@ export default function LandingPage() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
+  // Optional Gemma 4 API Key
+  const [gemmaApiKey, setGemmaApiKey] = useState("");
+  const [showKeyDrawer, setShowKeyDrawer] = useState(false);
+  const [isKeySaved, setIsKeySaved] = useState(false);
+
+  useEffect(() => {
+    if (typeof window !== "undefined") {
+      const stored = localStorage.getItem("firstpatch_gemma_api_key") || localStorage.getItem("firstpatch_api_key");
+      if (stored) {
+        setGemmaApiKey(stored);
+        setIsKeySaved(true);
+      }
+    }
+  }, []);
+
   const handleAnalyze = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!repoUrl.trim()) return;
@@ -32,8 +52,17 @@ export default function LandingPage() {
     setLoading(true);
     setError(null);
 
+    // Save key if entered
+    if (gemmaApiKey.trim() && typeof window !== "undefined") {
+      localStorage.setItem("firstpatch_gemma_api_key", gemmaApiKey.trim());
+      localStorage.setItem("firstpatch_api_key", gemmaApiKey.trim());
+      setIsKeySaved(true);
+    }
+
     try {
-      const res = await analyzeRepository(repoUrl.trim());
+      const res = await analyzeRepository(repoUrl.trim(), {
+        apiKey: gemmaApiKey.trim() || undefined
+      });
       router.push(`/repo/${res.owner}/${res.name}`);
     } catch (err: any) {
       setError(err.message || "Failed to analyze repository. Check the URL and try again.");
@@ -156,6 +185,71 @@ export default function LandingPage() {
                 {s.label}
               </button>
             ))}
+          </div>
+
+          {/* Gemma 4 Optional API Key Drawer */}
+          <div className="mt-4 pt-2 flex flex-col items-center">
+            <button
+              type="button"
+              onClick={() => setShowKeyDrawer(!showKeyDrawer)}
+              className="inline-flex items-center gap-1.5 text-xs text-zinc-400 hover:text-indigo-400 transition-colors cursor-pointer"
+            >
+              <Key className="h-3 w-3 text-indigo-400" />
+              <span>
+                {isKeySaved
+                  ? "✨ Gemma 4 Cloud Key Active (click to edit)"
+                  : "+ Add Gemma 4 API Key for Deep Analysis"}
+              </span>
+              {showKeyDrawer ? <ChevronUp className="h-3 w-3" /> : <ChevronDown className="h-3 w-3" />}
+            </button>
+
+            {showKeyDrawer && (
+              <div className="mt-3 w-full max-w-lg p-3.5 rounded-xl border border-indigo-500/30 bg-zinc-950/90 text-left space-y-2 shadow-xl">
+                <div className="flex items-center justify-between text-xs">
+                  <span className="font-semibold text-zinc-200 flex items-center gap-1.5">
+                    <Zap className="h-3.5 w-3.5 text-indigo-400" />
+                    Gemma 4 Deep Repository Intelligence
+                  </span>
+                  <a
+                    href="https://aistudio.google.com/app/apikey"
+                    target="_blank"
+                    rel="noreferrer"
+                    className="text-[11px] text-indigo-400 hover:text-indigo-300 flex items-center gap-0.5"
+                  >
+                    <span>Get Free Key</span>
+                    <ExternalLink className="h-2.5 w-2.5" />
+                  </a>
+                </div>
+                <p className="text-[11px] text-zinc-400">
+                  Provide a Google AI Studio or OpenRouter API key to automatically extract architectural patterns, beginner safe zones, and contribution quickstarts.
+                </p>
+                <div className="flex gap-2">
+                  <input
+                    type="password"
+                    placeholder="AIzaSy... or OpenRouter sk-or-..."
+                    value={gemmaApiKey}
+                    onChange={(e) => setGemmaApiKey(e.target.value)}
+                    className="flex-1 px-3 py-1.5 rounded-lg border border-zinc-800 bg-zinc-900 text-xs font-mono text-zinc-200 placeholder-zinc-600 focus:outline-none focus:border-indigo-500"
+                  />
+                  {gemmaApiKey && (
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setGemmaApiKey("");
+                        if (typeof window !== "undefined") {
+                          localStorage.removeItem("firstpatch_gemma_api_key");
+                          localStorage.removeItem("firstpatch_api_key");
+                        }
+                        setIsKeySaved(false);
+                      }}
+                      className="px-2 py-1 text-[11px] text-zinc-500 hover:text-red-400 cursor-pointer"
+                    >
+                      Clear
+                    </button>
+                  )}
+                </div>
+              </div>
+            )}
           </div>
         </form>
 

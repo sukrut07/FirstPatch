@@ -14,7 +14,8 @@ import {
   createContribution, 
   diagnoseSetupError,
   getRepositoryDocumentation,
-  generateRepositoryDocumentation
+  generateRepositoryDocumentation,
+  reanalyzeRepositoryWithGemma
 } from "@/lib/api";
 import { 
   Layers, 
@@ -32,6 +33,7 @@ import {
   ExternalLink, 
   Code, 
   AlertTriangle,
+  AlertCircle,
   Play,
   Copy,
   ChevronRight,
@@ -41,7 +43,9 @@ import {
   BarChart3,
   Key,
   Settings2,
-  Lock
+  Lock,
+  Zap,
+  Check
 } from "lucide-react";
 import CodebaseDiagrams from "@/components/CodebaseDiagrams";
 
@@ -55,13 +59,18 @@ export default function RepoWorkspacePage({
   const repoId = `${owner}/${repo}`;
   const router = useRouter();
 
-  const [activeTab, setActiveTab] = useState<"overview" | "analytics" | "architecture" | "files" | "issues" | "evidence" | "doctor" | "mentor" | "docs">("overview");
+  const [activeTab, setActiveTab] = useState<"overview" | "gemma" | "analytics" | "architecture" | "files" | "issues" | "evidence" | "doctor" | "mentor" | "docs">("overview");
   const [repoData, setRepoData] = useState<any>(null);
   const [files, setFiles] = useState<any[]>([]);
   const [selectedFile, setSelectedFile] = useState<any>(null);
   const [arch, setArch] = useState<any>(null);
   const [issues, setIssues] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
+
+  // Gemma 4 Deep Analysis State
+  const [reanalyzingAi, setReanalyzingAi] = useState(false);
+  const [aiError, setAiError] = useState<string | null>(null);
+  const [copiedCmd, setCopiedCmd] = useState<string | null>(null);
 
   // Documentation State
   const [docsData, setDocsData] = useState<any>(null);
@@ -92,7 +101,7 @@ export default function RepoWorkspacePage({
   useEffect(() => {
     loadRepoData();
     if (typeof window !== "undefined") {
-      const savedKey = localStorage.getItem("firstpatch_api_key");
+      const savedKey = localStorage.getItem("firstpatch_gemma_api_key") || localStorage.getItem("firstpatch_api_key");
       if (savedKey) setCustomApiKey(savedKey);
       const savedProv = localStorage.getItem("firstpatch_provider");
       if (savedProv) setSelectedProvider(savedProv);
@@ -105,13 +114,43 @@ export default function RepoWorkspacePage({
     if (typeof window !== "undefined") {
       if (newKey.trim()) {
         localStorage.setItem("firstpatch_api_key", newKey.trim());
+        localStorage.setItem("firstpatch_gemma_api_key", newKey.trim());
       } else {
         localStorage.removeItem("firstpatch_api_key");
+        localStorage.removeItem("firstpatch_gemma_api_key");
       }
       localStorage.setItem("firstpatch_provider", newProvider);
     }
     setKeySavedNotification(true);
     setTimeout(() => setKeySavedNotification(false), 2500);
+  };
+
+  const handleReanalyzeGemma = async () => {
+    setReanalyzingAi(true);
+    setAiError(null);
+    try {
+      const res = await reanalyzeRepositoryWithGemma(owner, repo, {
+        apiKey: customApiKey || undefined,
+        provider: selectedProvider !== "auto" ? selectedProvider : undefined
+      });
+      if (res?.ai_analysis) {
+        setRepoData((prev: any) => ({
+          ...prev,
+          ai_analysis: res.ai_analysis,
+          ai_analysis_model: res.model_used
+        }));
+      }
+    } catch (err: any) {
+      setAiError(err.message || "Failed to analyze repository with Gemma 4.");
+    } finally {
+      setReanalyzingAi(false);
+    }
+  };
+
+  const handleCopyCommand = (cmd: string, key: string) => {
+    navigator.clipboard.writeText(cmd);
+    setCopiedCmd(key);
+    setTimeout(() => setCopiedCmd(null), 2000);
   };
 
   const loadRepoData = async () => {
@@ -240,6 +279,7 @@ export default function RepoWorkspacePage({
 
   const tabs = [
     { id: "overview", label: "Overview", icon: Layers },
+    { id: "gemma", label: "Gemma 4 Intelligence", icon: Sparkles },
     { id: "analytics", label: "Diagrammatic Analysis", icon: BarChart3 },
     { id: "architecture", label: "Architecture", icon: Network },
     { id: "files", label: "File Explorer", icon: FileCode2 },
@@ -290,10 +330,16 @@ export default function RepoWorkspacePage({
           {/* Quick Action Buttons */}
           <div className="flex items-center gap-2 shrink-0">
             <button
+              onClick={() => setActiveTab("gemma")}
+              className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-indigo-600 hover:bg-indigo-500 text-white font-medium text-xs transition-colors cursor-pointer shadow-sm shadow-indigo-600/30"
+            >
+              <Sparkles className="h-3.5 w-3.5" />
+              Gemma 4 Intel
+            </button>
+            <button
               onClick={() => setActiveTab("mentor")}
               className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-zinc-800 hover:bg-zinc-700 border border-zinc-700 text-xs font-medium text-zinc-200 transition-colors cursor-pointer"
             >
-              <Sparkles className="h-3.5 w-3.5 text-emerald-400" />
               Ask Mentor
             </button>
             <button
@@ -351,67 +397,432 @@ export default function RepoWorkspacePage({
 
       {/* Tab 1: Overview */}
       {activeTab === "overview" && (
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-          <div className="lg:col-span-2 space-y-6">
-            <div className="rounded-xl border border-zinc-800 bg-zinc-900/40 p-5">
-              <h3 className="text-sm font-semibold text-zinc-200 mb-3">Repository Reality Summary</h3>
-              <p className="text-xs text-zinc-300 leading-relaxed mb-4">
-                {repoData?.analysis_summary || "Parsed and indexed using Python AST extraction and SQLite FTS5 lexical engine."}
-              </p>
-              <div className="p-3 rounded-lg bg-zinc-950 border border-zinc-800 text-xs text-zinc-400">
-                <span className="text-amber-400 font-semibold block mb-1">Analysis Limitations:</span>
-                {repoData?.analysis_limitations || "Bounded ingestion applied. Large binary bundles and lockfiles excluded."}
+        <div className="space-y-6">
+          {/* Gemma 4 Executive Card */}
+          <div className="rounded-xl border border-indigo-500/30 bg-gradient-to-r from-indigo-950/30 via-zinc-900/40 to-zinc-950/60 p-5 relative overflow-hidden">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-zinc-800/80 pb-3">
+              <div className="flex items-center gap-2">
+                <div className="h-8 w-8 rounded-lg bg-indigo-500/20 border border-indigo-500/30 flex items-center justify-center text-indigo-400">
+                  <Sparkles className="h-4 w-4" />
+                </div>
+                <div>
+                  <h3 className="text-sm font-semibold text-zinc-100 flex items-center gap-2">
+                    Gemma 4 Repository Intelligence
+                    {repoData?.ai_analysis?.architecture_pattern && (
+                      <span className="text-[10px] font-mono font-medium px-2 py-0.5 rounded-full bg-indigo-500/10 text-indigo-400 border border-indigo-500/20">
+                        {repoData.ai_analysis.architecture_pattern}
+                      </span>
+                    )}
+                  </h3>
+                  <span className="text-[11px] text-zinc-400 font-mono">
+                    Model: {repoData?.ai_analysis?.model_used || "gemma-4-31b-it"} • {repoData?.ai_analysis?.provider_used || "Google AI Studio"}
+                  </span>
+                </div>
+              </div>
+
+              <div className="flex items-center gap-2">
+                <button
+                  onClick={handleReanalyzeGemma}
+                  disabled={reanalyzingAi}
+                  className="px-3 py-1.5 rounded-lg bg-indigo-600 hover:bg-indigo-500 text-white font-medium text-xs flex items-center gap-1.5 transition-colors cursor-pointer disabled:opacity-50"
+                >
+                  {reanalyzingAi ? (
+                    <>
+                      <span className="h-3 w-3 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                      Analyzing...
+                    </>
+                  ) : (
+                    <>
+                      <Zap className="h-3 w-3 text-amber-300" />
+                      {repoData?.ai_analysis ? "Refresh Gemma 4" : "Run Gemma 4 Analysis"}
+                    </>
+                  )}
+                </button>
+                <button
+                  onClick={() => setActiveTab("gemma")}
+                  className="px-3 py-1.5 rounded-lg bg-zinc-800 hover:bg-zinc-700 text-zinc-200 border border-zinc-700 font-medium text-xs flex items-center gap-1 transition-colors cursor-pointer"
+                >
+                  <span>Full Intelligence</span>
+                  <ArrowRight className="h-3 w-3" />
+                </button>
               </div>
             </div>
 
-            <div className="rounded-xl border border-zinc-800 bg-zinc-900/40 p-5">
-              <h3 className="text-sm font-semibold text-zinc-200 mb-3">Architecture Boundaries</h3>
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                <div className="p-3 rounded-lg bg-zinc-950 border border-zinc-800">
-                  <span className="text-[11px] font-mono text-emerald-400 block mb-1">Entrypoints</span>
-                  <ul className="text-xs text-zinc-300 space-y-1">
-                    {arch?.entrypoints?.map((e: string) => (
-                      <li key={e} className="font-mono text-[11px] truncate">• {e}</li>
-                    )) || <li>src/main.py</li>}
-                  </ul>
+            <p className="text-xs text-zinc-300 leading-relaxed mt-3">
+              {repoData?.ai_analysis?.executive_summary || "Complete architectural intelligence with beginner safe zones, entrypoints, and grounded contribution commands."}
+            </p>
+
+            {repoData?.ai_analysis && (
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 mt-3 pt-3 border-t border-zinc-800/80 text-xs">
+                <div className="p-2.5 rounded-lg bg-zinc-950/60 border border-zinc-800/60">
+                  <span className="text-[10px] uppercase font-mono text-emerald-400 block mb-0.5">Beginner Safe Zones</span>
+                  <strong className="text-zinc-200">{repoData.ai_analysis.beginner_friendly_areas?.length || 0} approachable modules</strong>
                 </div>
-                <div className="p-3 rounded-lg bg-zinc-950 border border-zinc-800">
-                  <span className="text-[11px] font-mono text-cyan-400 block mb-1">Test Suites</span>
-                  <ul className="text-xs text-zinc-300 space-y-1">
-                    {arch?.test_suite?.slice(0, 4).map((t: string) => (
-                      <li key={t} className="font-mono text-[11px] truncate">• {t}</li>
-                    )) || <li>tests/</li>}
-                  </ul>
+                <div className="p-2.5 rounded-lg bg-zinc-950/60 border border-zinc-800/60">
+                  <span className="text-[10px] uppercase font-mono text-amber-400 block mb-0.5">High-Risk Subsystems</span>
+                  <strong className="text-zinc-200">{repoData.ai_analysis.high_risk_areas?.length || 0} critical modules</strong>
+                </div>
+                <div className="p-2.5 rounded-lg bg-zinc-950/60 border border-zinc-800/60">
+                  <span className="text-[10px] uppercase font-mono text-cyan-400 block mb-0.5">Test Quickstart</span>
+                  <code className="text-zinc-200 font-mono text-[11px] truncate block">
+                    {repoData.ai_analysis.contribution_quickstart?.test_command || "pytest"}
+                  </code>
+                </div>
+              </div>
+            )}
+          </div>
+
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+            <div className="lg:col-span-2 space-y-6">
+              <div className="rounded-xl border border-zinc-800 bg-zinc-900/40 p-5">
+                <h3 className="text-sm font-semibold text-zinc-200 mb-3">Repository Reality Summary</h3>
+                <p className="text-xs text-zinc-300 leading-relaxed mb-4">
+                  {repoData?.analysis_summary || "Parsed and indexed using Python AST extraction and SQLite FTS5 lexical engine."}
+                </p>
+                <div className="p-3 rounded-lg bg-zinc-950 border border-zinc-800 text-xs text-zinc-400">
+                  <span className="text-amber-400 font-semibold block mb-1">Analysis Limitations:</span>
+                  {repoData?.analysis_limitations || "Bounded ingestion applied. Large binary bundles and lockfiles excluded."}
+                </div>
+              </div>
+
+              <div className="rounded-xl border border-zinc-800 bg-zinc-900/40 p-5">
+                <h3 className="text-sm font-semibold text-zinc-200 mb-3">Architecture Boundaries</h3>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  <div className="p-3 rounded-lg bg-zinc-950 border border-zinc-800">
+                    <span className="text-[11px] font-mono text-emerald-400 block mb-1">Entrypoints</span>
+                    <ul className="text-xs text-zinc-300 space-y-1">
+                      {arch?.entrypoints?.map((e: string) => (
+                        <li key={e} className="font-mono text-[11px] truncate">• {e}</li>
+                      )) || <li>src/main.py</li>}
+                    </ul>
+                  </div>
+                  <div className="p-3 rounded-lg bg-zinc-950 border border-zinc-800">
+                    <span className="text-[11px] font-mono text-cyan-400 block mb-1">Test Suites</span>
+                    <ul className="text-xs text-zinc-300 space-y-1">
+                      {arch?.test_suite?.slice(0, 4).map((t: string) => (
+                        <li key={t} className="font-mono text-[11px] truncate">• {t}</li>
+                      )) || <li>tests/</li>}
+                    </ul>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <div className="space-y-6">
+              <div className="rounded-xl border border-zinc-800 bg-zinc-900/40 p-5">
+                <h3 className="text-sm font-semibold text-zinc-200 mb-3">Metadata & Topics</h3>
+                <div className="flex flex-wrap gap-1.5 mb-4">
+                  {repoData?.topics?.map((topic: string) => (
+                    <span key={topic} className="px-2 py-0.5 rounded bg-zinc-800 text-[11px] font-mono text-zinc-400">
+                      #{topic}
+                    </span>
+                  ))}
+                </div>
+                <div className="text-xs text-zinc-400 space-y-2 border-t border-zinc-800 pt-3">
+                  <div>License: <strong className="text-zinc-200">{repoData?.license_name || "MIT"}</strong></div>
+                  <div>Default Branch: <strong className="text-zinc-200">{repoData?.default_branch || "main"}</strong></div>
+                  <div>Indexed Files: <strong className="text-zinc-200">{files.length}</strong></div>
+                </div>
+
+                <div className="mt-4 pt-4 border-t border-zinc-800">
+                  <button
+                    onClick={() => setActiveTab("analytics")}
+                    className="w-full flex items-center justify-center gap-2 py-2 px-3 rounded-lg bg-emerald-500/10 hover:bg-emerald-500/20 border border-emerald-500/30 text-emerald-400 text-xs font-semibold transition-colors cursor-pointer"
+                  >
+                    <BarChart3 className="h-3.5 w-3.5" />
+                    View Visual Diagrams (Recharts)
+                  </button>
                 </div>
               </div>
             </div>
           </div>
+        </div>
+      )}
 
-          <div className="space-y-6">
-            <div className="rounded-xl border border-zinc-800 bg-zinc-900/40 p-5">
-              <h3 className="text-sm font-semibold text-zinc-200 mb-3">Metadata & Topics</h3>
-              <div className="flex flex-wrap gap-1.5 mb-4">
-                {repoData?.topics?.map((topic: string) => (
-                  <span key={topic} className="px-2 py-0.5 rounded bg-zinc-800 text-[11px] font-mono text-zinc-400">
-                    #{topic}
-                  </span>
-                ))}
-              </div>
-              <div className="text-xs text-zinc-400 space-y-2 border-t border-zinc-800 pt-3">
-                <div>License: <strong className="text-zinc-200">{repoData?.license_name || "MIT"}</strong></div>
-                <div>Default Branch: <strong className="text-zinc-200">{repoData?.default_branch || "main"}</strong></div>
-                <div>Indexed Files: <strong className="text-zinc-200">{files.length}</strong></div>
+      {/* Tab: Gemma 4 Deep Intelligence */}
+      {activeTab === "gemma" && (
+        <div className="space-y-6">
+          {/* Header Card */}
+          <div className="rounded-xl border border-indigo-500/30 bg-gradient-to-r from-indigo-950/40 via-zinc-900/60 to-zinc-950/80 p-6 space-y-4 shadow-xl">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-zinc-800/80 pb-4">
+              <div>
+                <div className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full border border-indigo-500/30 bg-indigo-500/10 text-indigo-400 text-xs font-medium mb-1.5">
+                  <Sparkles className="h-3 w-3" />
+                  <span>Google AI Studio / Gemma 4 Intelligence</span>
+                </div>
+                <h2 className="text-lg font-bold text-zinc-100 flex items-center gap-2">
+                  Principal Architecture Analysis
+                  {repoData?.ai_analysis?.architecture_pattern && (
+                    <span className="text-xs font-mono font-medium px-2.5 py-0.5 rounded-full bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">
+                      {repoData.ai_analysis.architecture_pattern}
+                    </span>
+                  )}
+                </h2>
+                <p className="text-xs text-zinc-400 mt-0.5">
+                  Automated architectural synthesis grounded in AST symbol manifests and real repository files.
+                </p>
               </div>
 
-              <div className="mt-4 pt-4 border-t border-zinc-800">
+              <div className="flex flex-wrap items-center gap-2 shrink-0">
                 <button
-                  onClick={() => setActiveTab("analytics")}
-                  className="w-full flex items-center justify-center gap-2 py-2 px-3 rounded-lg bg-emerald-500/10 hover:bg-emerald-500/20 border border-emerald-500/30 text-emerald-400 text-xs font-semibold transition-colors cursor-pointer"
+                  onClick={handleReanalyzeGemma}
+                  disabled={reanalyzingAi}
+                  className="px-3.5 py-2 rounded-lg bg-indigo-600 hover:bg-indigo-500 text-white font-medium text-xs flex items-center gap-1.5 transition-colors cursor-pointer disabled:opacity-50 shadow-sm shadow-indigo-600/30"
                 >
-                  <BarChart3 className="h-3.5 w-3.5" />
-                  View Visual Diagrams (Recharts)
+                  {reanalyzingAi ? (
+                    <>
+                      <span className="h-3.5 w-3.5 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                      Analyzing with Gemma 4...
+                    </>
+                  ) : (
+                    <>
+                      <Zap className="h-3.5 w-3.5 text-amber-300" />
+                      Re-Analyze with Gemma 4
+                    </>
+                  )}
                 </button>
+
+                <Link
+                  href="/settings/models"
+                  className="px-3 py-2 rounded-lg bg-zinc-800 hover:bg-zinc-700 text-zinc-200 border border-zinc-700 text-xs font-medium flex items-center gap-1.5 transition-colors"
+                >
+                  <Key className="h-3.5 w-3.5 text-indigo-400" />
+                  API Key Space
+                </Link>
               </div>
+            </div>
+
+            {aiError && (
+              <div className="p-3 rounded-lg bg-red-500/10 border border-red-500/30 text-xs text-red-400">
+                {aiError}
+              </div>
+            )}
+
+            {/* Model & Provider Metadata */}
+            <div className="flex flex-wrap items-center gap-4 text-xs text-zinc-400 pt-1 font-mono">
+              <div>Model: <strong className="text-indigo-400">{repoData?.ai_analysis?.model_used || "gemma-4-31b-it"}</strong></div>
+              <div>Provider: <strong className="text-zinc-200">{repoData?.ai_analysis?.provider_used || "Google AI Studio"}</strong></div>
+              <div>Language: <strong className="text-zinc-200">{repoData?.ai_analysis?.primary_language || repoData?.language || "Python"}</strong></div>
+              <div>Grounding: <strong className="text-emerald-400">AST Clustered</strong></div>
+            </div>
+
+            {/* Executive Summary */}
+            <div className="p-4 rounded-xl bg-zinc-950/80 border border-zinc-800/80 space-y-2">
+              <span className="text-[11px] font-mono uppercase tracking-wider text-indigo-400 font-semibold block">
+                Executive Architectural Overview
+              </span>
+              <p className="text-xs sm:text-sm text-zinc-200 leading-relaxed">
+                {repoData?.ai_analysis?.executive_summary || "Synthesizing repository architecture pattern, entrypoints, and beginner-friendly boundaries..."}
+              </p>
+            </div>
+          </div>
+
+          {/* Two-Column Grid: Safe Zones vs High Risk */}
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            {/* Beginner-Friendly Safe Zones */}
+            <div className="rounded-xl border border-emerald-500/30 bg-emerald-950/10 p-5 space-y-4">
+              <div className="flex items-center gap-2 text-emerald-400 border-b border-zinc-800/80 pb-3">
+                <ShieldCheck className="h-5 w-5" />
+                <div>
+                  <h3 className="text-sm font-semibold text-zinc-100">Beginner-Friendly Contribution Zones</h3>
+                  <p className="text-[11px] text-zinc-400">Low blast-radius modules safe for your first PR</p>
+                </div>
+              </div>
+
+              <div className="space-y-3">
+                {repoData?.ai_analysis?.beginner_friendly_areas?.map((item: any, i: number) => (
+                  <div key={i} className="p-3.5 rounded-lg bg-zinc-950 border border-zinc-800/80 space-y-2">
+                    <div className="flex items-center justify-between">
+                      <strong className="text-xs text-zinc-100 font-semibold">{item.area}</strong>
+                      <span className="text-[10px] font-mono px-2 py-0.5 rounded bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">
+                        Safe Zone
+                      </span>
+                    </div>
+                    <p className="text-xs text-zinc-400 leading-relaxed">{item.why}</p>
+                    {item.recommended_files && item.recommended_files.length > 0 && (
+                      <div className="pt-1 flex flex-wrap gap-1.5 items-center">
+                        <span className="text-[10px] text-zinc-500 font-mono">Files:</span>
+                        {item.recommended_files.map((rf: string) => (
+                          <button
+                            key={rf}
+                            onClick={() => {
+                              loadFile(rf);
+                              setActiveTab("files");
+                            }}
+                            className="text-[11px] font-mono px-2 py-0.5 rounded bg-zinc-900 border border-zinc-800 text-indigo-400 hover:text-indigo-300 hover:border-zinc-700 transition-colors cursor-pointer"
+                          >
+                            {rf}
+                          </button>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                )) || (
+                  <div className="text-xs text-zinc-500 font-mono p-4 text-center">
+                    No beginner zones indexed yet. Click &quot;Re-Analyze with Gemma 4&quot; above.
+                  </div>
+                )}
+              </div>
+            </div>
+
+            {/* High-Risk Areas */}
+            <div className="rounded-xl border border-amber-500/30 bg-amber-950/10 p-5 space-y-4">
+              <div className="flex items-center gap-2 text-amber-400 border-b border-zinc-800/80 pb-3">
+                <AlertTriangle className="h-5 w-5" />
+                <div>
+                  <h3 className="text-sm font-semibold text-zinc-100">High-Risk Subsystems & Warning Areas</h3>
+                  <p className="text-[11px] text-zinc-400">Critical files requiring strict caution and maintainer approval</p>
+                </div>
+              </div>
+
+              <div className="space-y-3">
+                {repoData?.ai_analysis?.high_risk_areas?.map((item: any, i: number) => (
+                  <div key={i} className="p-3.5 rounded-lg bg-zinc-950 border border-zinc-800/80 space-y-2">
+                    <div className="flex items-center justify-between">
+                      <strong className="text-xs text-zinc-100 font-semibold">{item.area}</strong>
+                      <span className="text-[10px] font-mono px-2 py-0.5 rounded bg-amber-500/10 text-amber-400 border border-amber-500/20">
+                        High Caution
+                      </span>
+                    </div>
+                    <p className="text-xs text-zinc-400 leading-relaxed">{item.reason}</p>
+                    {item.files && item.files.length > 0 && (
+                      <div className="pt-1 flex flex-wrap gap-1.5 items-center">
+                        <span className="text-[10px] text-zinc-500 font-mono">Critical:</span>
+                        {item.files.map((cf: string) => (
+                          <span
+                            key={cf}
+                            className="text-[11px] font-mono px-2 py-0.5 rounded bg-zinc-900 border border-zinc-800 text-amber-400/90"
+                          >
+                            {cf}
+                          </span>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                )) || (
+                  <div className="text-xs text-zinc-500 font-mono p-4 text-center">
+                    No high-risk zones recorded.
+                  </div>
+                )}
+              </div>
+            </div>
+          </div>
+
+          {/* Contribution Quickstart Commands */}
+          {repoData?.ai_analysis?.contribution_quickstart && (
+            <div className="rounded-xl border border-zinc-800 bg-zinc-900/40 p-5 space-y-4">
+              <div className="flex items-center gap-2 text-zinc-200 border-b border-zinc-800 pb-3">
+                <Terminal className="h-4 w-4 text-indigo-400" />
+                <div>
+                  <h3 className="text-sm font-semibold text-zinc-100">Contribution Quickstart Commands</h3>
+                  <p className="text-[11px] text-zinc-400">Grounded setup and verification workflow detected by Gemma 4</p>
+                </div>
+              </div>
+
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                {/* Setup */}
+                <div className="p-3.5 rounded-lg bg-zinc-950 border border-zinc-800 space-y-2">
+                  <div className="flex items-center justify-between">
+                    <span className="text-[10px] font-mono uppercase text-zinc-400">1. Setup / Install</span>
+                    <button
+                      onClick={() => handleCopyCommand(repoData.ai_analysis.contribution_quickstart.setup_command, "setup")}
+                      className="text-zinc-500 hover:text-zinc-200 transition-colors cursor-pointer"
+                      title="Copy command"
+                    >
+                      {copiedCmd === "setup" ? <Check className="h-3 w-3 text-emerald-400" /> : <Copy className="h-3 w-3" />}
+                    </button>
+                  </div>
+                  <code className="text-xs font-mono text-emerald-400 block p-2 bg-zinc-900 rounded border border-zinc-800/80 overflow-x-auto">
+                    {repoData.ai_analysis.contribution_quickstart.setup_command || "npm install"}
+                  </code>
+                </div>
+
+                {/* Test */}
+                <div className="p-3.5 rounded-lg bg-zinc-950 border border-zinc-800 space-y-2">
+                  <div className="flex items-center justify-between">
+                    <span className="text-[10px] font-mono uppercase text-zinc-400">2. Run Tests</span>
+                    <button
+                      onClick={() => handleCopyCommand(repoData.ai_analysis.contribution_quickstart.test_command, "test")}
+                      className="text-zinc-500 hover:text-zinc-200 transition-colors cursor-pointer"
+                      title="Copy command"
+                    >
+                      {copiedCmd === "test" ? <Check className="h-3 w-3 text-emerald-400" /> : <Copy className="h-3 w-3" />}
+                    </button>
+                  </div>
+                  <code className="text-xs font-mono text-cyan-400 block p-2 bg-zinc-900 rounded border border-zinc-800/80 overflow-x-auto">
+                    {repoData.ai_analysis.contribution_quickstart.test_command || "npm test"}
+                  </code>
+                </div>
+
+                {/* Lint */}
+                <div className="p-3.5 rounded-lg bg-zinc-950 border border-zinc-800 space-y-2">
+                  <div className="flex items-center justify-between">
+                    <span className="text-[10px] font-mono uppercase text-zinc-400">3. Lint / Format</span>
+                    <button
+                      onClick={() => handleCopyCommand(repoData.ai_analysis.contribution_quickstart.lint_command, "lint")}
+                      className="text-zinc-500 hover:text-zinc-200 transition-colors cursor-pointer"
+                      title="Copy command"
+                    >
+                      {copiedCmd === "lint" ? <Check className="h-3 w-3 text-emerald-400" /> : <Copy className="h-3 w-3" />}
+                    </button>
+                  </div>
+                  <code className="text-xs font-mono text-indigo-400 block p-2 bg-zinc-900 rounded border border-zinc-800/80 overflow-x-auto">
+                    {repoData.ai_analysis.contribution_quickstart.lint_command || "npm run lint"}
+                  </code>
+                </div>
+              </div>
+
+              {repoData.ai_analysis.contribution_quickstart.prerequisites && (
+                <div className="pt-2 text-xs text-zinc-400 flex flex-wrap items-center gap-2">
+                  <span className="text-zinc-500 font-mono text-[11px]">Prerequisites:</span>
+                  {repoData.ai_analysis.contribution_quickstart.prerequisites.map((p: string, i: number) => (
+                    <span key={i} className="px-2 py-0.5 rounded bg-zinc-800 border border-zinc-700 text-zinc-300 font-mono text-[11px]">
+                      {p}
+                    </span>
+                  ))}
+                </div>
+              )}
+            </div>
+          )}
+
+          {/* Architectural Pitfalls & Suggested First Issues */}
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            {/* Pitfalls */}
+            <div className="rounded-xl border border-zinc-800 bg-zinc-900/40 p-5 space-y-3">
+              <h3 className="text-sm font-semibold text-zinc-200 flex items-center gap-2">
+                <AlertCircle className="h-4 w-4 text-amber-400" />
+                Architectural Pitfalls to Avoid
+              </h3>
+              <p className="text-xs text-zinc-400">
+                Common contributor errors flagged by Gemma 4 analysis
+              </p>
+              <ul className="space-y-2 pt-1">
+                {repoData?.ai_analysis?.architectural_pitfalls?.map((pitfall: string, i: number) => (
+                  <li key={i} className="p-2.5 rounded-lg bg-zinc-950 border border-zinc-800/80 text-xs text-zinc-300 flex items-start gap-2">
+                    <span className="text-amber-400 font-bold">•</span>
+                    <span>{pitfall}</span>
+                  </li>
+                )) || <li className="text-xs text-zinc-500">None identified.</li>}
+              </ul>
+            </div>
+
+            {/* Suggested First Issues */}
+            <div className="rounded-xl border border-zinc-800 bg-zinc-900/40 p-5 space-y-3">
+              <h3 className="text-sm font-semibold text-zinc-200 flex items-center gap-2">
+                <Sparkles className="h-4 w-4 text-emerald-400" />
+                Suggested First Contributions
+              </h3>
+              <p className="text-xs text-zinc-400">
+                High-acceptance opportunities recommended for newcomer developers
+              </p>
+              <ul className="space-y-2 pt-1">
+                {repoData?.ai_analysis?.suggested_first_issues?.map((idea: string, i: number) => (
+                  <li key={i} className="p-2.5 rounded-lg bg-zinc-950 border border-zinc-800/80 text-xs text-zinc-300 flex items-start gap-2">
+                    <CheckCircle2 className="h-3.5 w-3.5 text-emerald-400 shrink-0 mt-0.5" />
+                    <span>{idea}</span>
+                  </li>
+                )) || <li className="text-xs text-zinc-500">No suggestions generated yet.</li>}
+              </ul>
             </div>
           </div>
         </div>
@@ -839,11 +1250,11 @@ export default function RepoWorkspacePage({
 
               <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
                 <div className="sm:col-span-2 space-y-1">
-                  <label className="text-[11px] font-mono text-zinc-400 block">API Key (OpenAI / DO Gradient / Groq / Anthropic)</label>
+                  <label className="text-[11px] font-mono text-zinc-400 block">API Key (Google AI Studio Gemma 4 / OpenRouter / OpenAI)</label>
                   <div className="flex gap-2">
                     <input
                       type="password"
-                      placeholder="sk-... or grad_... or gsk_..."
+                      placeholder="AIzaSy... or sk-or-... or sk-..."
                       value={customApiKey}
                       onChange={(e) => setCustomApiKey(e.target.value)}
                       className="flex-1 p-2 rounded-lg border border-zinc-800 bg-zinc-900 text-xs font-mono text-zinc-200 placeholder-zinc-600 focus:outline-none focus:border-emerald-500"
@@ -877,7 +1288,9 @@ export default function RepoWorkspacePage({
                     }}
                     className="w-full p-2 rounded-lg border border-zinc-800 bg-zinc-900 text-xs text-zinc-200 focus:outline-none focus:border-emerald-500"
                   >
-                    <option value="auto">Auto-detect from Key Prefix</option>
+                    <option value="auto">Auto-detect from Key Prefix (AIza / sk- / grad-)</option>
+                    <option value="google_ai_studio">Google AI Studio (Gemma 4: gemma-4-31b-it)</option>
+                    <option value="openrouter">OpenRouter (google/gemma-4-31b-it)</option>
                     <option value="openai">OpenAI (GPT-4o-mini)</option>
                     <option value="gradient">DigitalOcean Gradient™ AI Agentic Cloud</option>
                     <option value="groq">Groq Fast Inference (Llama 3.1)</option>

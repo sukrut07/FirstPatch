@@ -83,3 +83,29 @@ async def update_active_model(data: ModelUpdateSchema):
         "active_model": settings.OLLAMA_MODEL,
         "embed_model": settings.OLLAMA_EMBED_MODEL
     }
+
+class TestCloudKeySchema(BaseModel):
+    api_key: str
+    provider: Optional[str] = None
+    model: Optional[str] = None
+
+@router.post("/api/models/test-cloud-key")
+async def test_cloud_key(data: TestCloudKeySchema):
+    from backend.app.services.cloud_llm_service import cloud_llm_service
+    try:
+        res = await cloud_llm_service.generate_response(
+            prompt="Respond in exactly 1 sentence: What makes open-source contributions impactful?",
+            api_key=data.api_key,
+            provider=data.provider,
+            model=data.model,
+            temperature=0.1
+        )
+        return {
+            "status": "success",
+            "model": res.get("model"),
+            "provider": res.get("provider"),
+            "test_output": res.get("response", "").strip()
+        }
+    except Exception as e:
+        raise HTTPException(status_code=400, detail=str(e))
+

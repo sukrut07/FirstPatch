@@ -35,6 +35,12 @@ class Settings(BaseSettings):
     DO_GRADIENT_WORKSPACE_ID: Optional[str] = None
     AI_INFERENCE_PROVIDER: str = "ollama"  # 'ollama' or 'digitalocean_gradient'
     
+    # Gemma 4 Cloud & Google AI Studio Configuration
+    GEMMA_API_KEY: Optional[str] = None
+    GOOGLE_AI_API_KEY: Optional[str] = None
+    GEMMA_MODEL: str = "gemma-4-31b-it"
+    GEMMA_PROVIDER: str = "google_ai_studio"
+    
     # CORS
     CORS_ORIGINS: List[str] = [
         "http://localhost:3000",
