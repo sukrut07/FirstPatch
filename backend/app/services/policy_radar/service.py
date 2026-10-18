@@ -68,9 +68,10 @@ class PolicyRadarService:
     ]
 
     AI_DISCLOSURE_PATTERNS = [
-        r"\bdisclose\b.*?\b(?:ai|llm|copilot|automated)\b",
+        r"\b(?:disclose|declare|mention|indicate)\b.*?\b(?:ai|llm|copilot|automated)\b",
+        r"\bstate (?:if|whether)\b.*?\b(?:ai|llm|copilot)\b.*?\bused\b",
         r"\bstate if (?:ai|llm|copilot) was used\b",
-        r"\bmention in the PR if you used (?:ai|llm|copilot)\b",
+        r"\bmention in the pr if you used (?:ai|llm|copilot)\b",
         r"\bdeclare any ai assistance\b",
     ]
 
