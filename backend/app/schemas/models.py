@@ -59,6 +59,9 @@ class AIProviderStatus(str, Enum):
     UNAVAILABLE = "unavailable"
     DEGRADED = "degraded"
     NOT_CONFIGURED = "not_configured"
+    AI_ACTIVE = "ai_active"
+    FALLBACK_ACTIVE = "fallback_active"
+    AI_UNAVAILABLE = "ai_unavailable"
 
 
 # ---------------------------------------------------------------------------

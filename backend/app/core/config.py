@@ -37,7 +37,7 @@ class Settings(BaseSettings):
     # AI Provider
     ai_provider: Literal["google_ai_studio", "local_ollama", "none"] = "none"
     google_ai_api_key: str = ""
-    google_ai_model: str = "gemma-3-27b-it"
+    google_ai_model: str = "gemma-4-31b-it"
     ollama_base_url: str = "http://localhost:11434"
     ollama_model: str = "gemma3:12b"
 

@@ -300,6 +300,38 @@ Diagnoses a setup error. Does NOT execute commands.
 
 ---
 
+### `POST /api/mentor/reality-check`
+
+Explicitly validates a contribution plan against repository reality using the Repository Reality Checker.
+
+**Request:**
+```json
+{
+  "owner": "tiangolo",
+  "repo": "fastapi",
+  "plan": { ... }
+}
+```
+
+**Response 200:**
+```json
+{
+  "is_valid": true,
+  "verified_files": ["fastapi", "tests"],
+  "hallucinated_files": [],
+  "verified_symbols": ["fastapi::FastAPI"],
+  "unsupported_symbols": [],
+  "invalid_evidence_ids": [],
+  "unsupported_test_claims": [],
+  "commit_sha_valid": true,
+  "warning_count": 0,
+  "warnings": []
+}
+```
+
+
+---
+
 ## Verification
 
 ### `GET /api/verification/{session_id}`
