@@ -3,7 +3,7 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from backend.app.config import settings
 from backend.app.database import init_db
-from backend.app.routers import health, repositories, issues, retrieval, mentor, contributions, verification, review, learning, benchmark
+from backend.app.routers import health, repositories, issues, retrieval, mentor, contributions, verification, review, learning, benchmark, compliance
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
@@ -38,6 +38,7 @@ app.include_router(verification.router)
 app.include_router(review.router)
 app.include_router(learning.router)
 app.include_router(benchmark.router)
+app.include_router(compliance.router)
 
 @app.get("/")
 async def root():

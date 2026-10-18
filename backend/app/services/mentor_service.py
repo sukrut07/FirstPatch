@@ -2,6 +2,7 @@ import uuid
 import json
 from typing import Dict, Any, List, Optional
 from backend.app.services.ollama_service import ollama_service
+from backend.app.services.cloud_llm_service import cloud_llm_service
 from backend.app.services.retrieval_service import retrieval_service
 from backend.app.database import get_db, get_iso_now
 
@@ -15,7 +16,10 @@ class MentorService:
         question: str,
         mode: str = "learn",  # "learn" or "copilot"
         conversation_id: Optional[str] = None,
-        skill_level: str = "Beginner"
+        skill_level: str = "Beginner",
+        api_key: Optional[str] = None,
+        provider: Optional[str] = None,
+        model: Optional[str] = None
     ) -> Dict[str, Any]:
         # 1. Retrieve grounded code evidence
         chunks = await retrieval_service.search_hybrid(repository_id, question, limit=8)
@@ -65,23 +69,48 @@ class MentorService:
             f"{question}\n"
         )
 
-        # 4. Generate answer with local AI or fallback
-        ollama_status = await ollama_service.get_status()
-        if ollama_status["online"]:
+        # 4. Generate answer: Priority 1 = User API Key / Cloud Provider, Priority 2 = Local Ollama, Priority 3 = Grounded Offline
+        answer = None
+        model_used = None
+        cloud_error = None
+        offline_mode = False
+
+        if api_key or getattr(settings, "DO_GRADIENT_API_KEY", None):
             try:
-                gen_result = await ollama_service.generate_response(
+                cloud_res = await cloud_llm_service.generate_response(
                     prompt=prompt,
                     system_prompt=system_prompt,
+                    api_key=api_key,
+                    provider=provider,
+                    model=model,
                     temperature=0.1
                 )
-                answer = gen_result["response"]
-                model_used = gen_result["model"]
-            except Exception as e:
-                answer = self._generate_offline_answer(question, chunks, mode, str(e))
-                model_used = "deterministic-fallback"
-        else:
-            answer = self._generate_offline_answer(question, chunks, mode, ollama_status.get("error"))
-            model_used = "offline-fallback"
+                answer = cloud_res["response"]
+                model_used = f"{cloud_res['provider']} ({cloud_res['model']})"
+                offline_mode = False
+            except Exception as ce:
+                cloud_error = str(ce)
+
+        if not answer:
+            ollama_status = await ollama_service.get_status()
+            if ollama_status["online"]:
+                try:
+                    gen_result = await ollama_service.generate_response(
+                        prompt=prompt,
+                        system_prompt=system_prompt,
+                        temperature=0.1
+                    )
+                    answer = gen_result["response"]
+                    model_used = gen_result["model"]
+                except Exception as e:
+                    answer = self._generate_offline_answer(question, chunks, mode, str(e))
+                    model_used = "deterministic-fallback"
+                    offline_mode = True
+            else:
+                fail_reason = cloud_error or ollama_status.get("error")
+                answer = self._generate_offline_answer(question, chunks, mode, fail_reason)
+                model_used = "offline-fallback"
+                offline_mode = True
 
         # 5. Persist message in conversation
         conv_id = conversation_id or str(uuid.uuid4())
@@ -121,7 +150,8 @@ class MentorService:
             "model_used": model_used,
             "evidence": evidence_records,
             "grounding_audit": self._audit_grounding(answer, chunks),
-            "offline_mode": not ollama_status["online"]
+            "offline_mode": offline_mode,
+            "api_key_used": bool(api_key or getattr(settings, "DO_GRADIENT_API_KEY", None))
         }
 
     def _audit_grounding(self, answer: str, chunks: List[Dict[str, Any]]) -> Dict[str, Any]:

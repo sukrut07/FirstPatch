@@ -37,8 +37,13 @@ import {
   ChevronRight,
   ShieldCheck,
   FileText,
-  Download
+  Download,
+  BarChart3,
+  Key,
+  Settings2,
+  Lock
 } from "lucide-react";
+import CodebaseDiagrams from "@/components/CodebaseDiagrams";
 
 export default function RepoWorkspacePage({
   params,
@@ -50,7 +55,7 @@ export default function RepoWorkspacePage({
   const repoId = `${owner}/${repo}`;
   const router = useRouter();
 
-  const [activeTab, setActiveTab] = useState<"overview" | "architecture" | "files" | "issues" | "evidence" | "doctor" | "mentor" | "docs">("overview");
+  const [activeTab, setActiveTab] = useState<"overview" | "analytics" | "architecture" | "files" | "issues" | "evidence" | "doctor" | "mentor" | "docs">("overview");
   const [repoData, setRepoData] = useState<any>(null);
   const [files, setFiles] = useState<any[]>([]);
   const [selectedFile, setSelectedFile] = useState<any>(null);
@@ -70,6 +75,12 @@ export default function RepoWorkspacePage({
   const [chatMessages, setChatMessages] = useState<any[]>([]);
   const [asking, setAsking] = useState(false);
 
+  // Custom API Key & Cloud Provider State
+  const [customApiKey, setCustomApiKey] = useState("");
+  const [selectedProvider, setSelectedProvider] = useState<string>("auto");
+  const [showApiSettings, setShowApiSettings] = useState(false);
+  const [keySavedNotification, setKeySavedNotification] = useState(false);
+
   // Setup Doctor State
   const [errorInput, setErrorInput] = useState("");
   const [diagnosis, setDiagnosis] = useState<any>(null);
@@ -80,7 +91,28 @@ export default function RepoWorkspacePage({
 
   useEffect(() => {
     loadRepoData();
+    if (typeof window !== "undefined") {
+      const savedKey = localStorage.getItem("firstpatch_api_key");
+      if (savedKey) setCustomApiKey(savedKey);
+      const savedProv = localStorage.getItem("firstpatch_provider");
+      if (savedProv) setSelectedProvider(savedProv);
+    }
   }, [owner, repo]);
+
+  const handleSaveApiKey = (newKey: string, newProvider: string) => {
+    setCustomApiKey(newKey);
+    setSelectedProvider(newProvider);
+    if (typeof window !== "undefined") {
+      if (newKey.trim()) {
+        localStorage.setItem("firstpatch_api_key", newKey.trim());
+      } else {
+        localStorage.removeItem("firstpatch_api_key");
+      }
+      localStorage.setItem("firstpatch_provider", newProvider);
+    }
+    setKeySavedNotification(true);
+    setTimeout(() => setKeySavedNotification(false), 2500);
+  };
 
   const loadRepoData = async () => {
     setLoading(true);
@@ -149,13 +181,16 @@ export default function RepoWorkspacePage({
         repositoryId: repoId,
         question: userText,
         mode: mentorMode,
-        skillLevel: "Beginner"
+        skillLevel: "Beginner",
+        apiKey: customApiKey.trim() || undefined,
+        provider: selectedProvider !== "auto" ? selectedProvider : undefined
       });
       setChatMessages([...newMsgs, {
         role: "assistant",
         content: res.answer,
         evidence: res.evidence,
-        model: res.model_used
+        model: res.model_used,
+        apiKeyUsed: res.api_key_used
       }]);
     } catch (err: any) {
       setChatMessages([...newMsgs, {
@@ -205,6 +240,7 @@ export default function RepoWorkspacePage({
 
   const tabs = [
     { id: "overview", label: "Overview", icon: Layers },
+    { id: "analytics", label: "Diagrammatic Analysis", icon: BarChart3 },
     { id: "architecture", label: "Architecture", icon: Network },
     { id: "files", label: "File Explorer", icon: FileCode2 },
     { id: "issues", label: `Issues (${issues.length})`, icon: Compass },
@@ -366,8 +402,45 @@ export default function RepoWorkspacePage({
                 <div>Default Branch: <strong className="text-zinc-200">{repoData?.default_branch || "main"}</strong></div>
                 <div>Indexed Files: <strong className="text-zinc-200">{files.length}</strong></div>
               </div>
+
+              <div className="mt-4 pt-4 border-t border-zinc-800">
+                <button
+                  onClick={() => setActiveTab("analytics")}
+                  className="w-full flex items-center justify-center gap-2 py-2 px-3 rounded-lg bg-emerald-500/10 hover:bg-emerald-500/20 border border-emerald-500/30 text-emerald-400 text-xs font-semibold transition-colors cursor-pointer"
+                >
+                  <BarChart3 className="h-3.5 w-3.5" />
+                  View Visual Diagrams (Recharts)
+                </button>
+              </div>
             </div>
           </div>
+        </div>
+      )}
+
+      {/* Tab: Diagrammatic Analysis (Recharts) */}
+      {activeTab === "analytics" && (
+        <div className="space-y-4">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 p-4 rounded-xl border border-zinc-800 bg-zinc-900/40">
+            <div>
+              <h2 className="text-sm font-semibold text-zinc-200 flex items-center gap-2">
+                <BarChart3 className="h-4 w-4 text-emerald-400" />
+                Diagrammatic Codebase & AST Analysis
+              </h2>
+              <p className="text-xs text-zinc-400 mt-0.5">
+                Interactive Recharts telemetry: Language proportions, AST function/class distribution, and multi-dimensional issue fit radar.
+              </p>
+            </div>
+            <span className="text-[11px] font-mono px-2.5 py-1 rounded bg-zinc-800 text-zinc-300 border border-zinc-700 self-start sm:self-auto">
+              Recharts v3 Powered
+            </span>
+          </div>
+
+          <CodebaseDiagrams
+            files={files}
+            arch={arch}
+            issues={issues}
+            repoData={repoData}
+          />
         </div>
       )}
 
@@ -700,40 +773,139 @@ export default function RepoWorkspacePage({
       {/* Tab 7: AI Mentor (Chat) */}
       {activeTab === "mentor" && (
         <div className="rounded-xl border border-zinc-800 bg-zinc-900/40 p-5 space-y-4">
-          <div className="flex items-center justify-between border-b border-zinc-800 pb-3">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-zinc-800 pb-3">
             <div>
               <h3 className="text-sm font-semibold text-zinc-200 flex items-center gap-2">
                 <Sparkles className="h-4 w-4 text-emerald-400" />
                 Repository-Grounded AI Mentor
               </h3>
               <p className="text-xs text-zinc-400 mt-0.5">
-                Every answer references verified source files, line ranges, and AST definitions.
+                Answers are grounded in AST syntax trees and verified repository evidence.
               </p>
             </div>
 
-            {/* Mode Toggle */}
-            <div className="flex items-center gap-1 bg-zinc-950 p-1 rounded-lg border border-zinc-800">
+            {/* Mode & API Settings Controls */}
+            <div className="flex flex-wrap items-center gap-2">
               <button
-                onClick={() => setMentorMode("learn")}
-                className={`px-3 py-1 rounded text-xs font-medium cursor-pointer transition-colors ${
-                  mentorMode === "learn"
-                    ? "bg-emerald-500/20 text-emerald-400 border border-emerald-500/30"
-                    : "text-zinc-400 hover:text-zinc-200"
+                type="button"
+                onClick={() => setShowApiSettings(!showApiSettings)}
+                className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium border transition-colors cursor-pointer ${
+                  customApiKey.trim()
+                    ? "bg-emerald-500/10 text-emerald-300 border-emerald-500/30"
+                    : "bg-zinc-950 text-zinc-400 border-zinc-800 hover:text-zinc-200"
                 }`}
               >
-                Learn Mode (Socratic)
+                <Key className="h-3.5 w-3.5 text-emerald-400" />
+                <span>{customApiKey.trim() ? "Custom API Key Active" : "Configure API Key"}</span>
               </button>
-              <button
-                onClick={() => setMentorMode("copilot")}
-                className={`px-3 py-1 rounded text-xs font-medium cursor-pointer transition-colors ${
-                  mentorMode === "copilot"
-                    ? "bg-cyan-500/20 text-cyan-400 border border-cyan-500/30"
-                    : "text-zinc-400 hover:text-zinc-200"
-                }`}
-              >
-                Copilot Mode (Direct)
-              </button>
+
+              <div className="flex items-center gap-1 bg-zinc-950 p-1 rounded-lg border border-zinc-800">
+                <button
+                  onClick={() => setMentorMode("learn")}
+                  className={`px-3 py-1 rounded text-xs font-medium cursor-pointer transition-colors ${
+                    mentorMode === "learn"
+                      ? "bg-emerald-500/20 text-emerald-400 border border-emerald-500/30"
+                      : "text-zinc-400 hover:text-zinc-200"
+                  }`}
+                >
+                  Learn Mode (Socratic)
+                </button>
+                <button
+                  onClick={() => setMentorMode("copilot")}
+                  className={`px-3 py-1 rounded text-xs font-medium cursor-pointer transition-colors ${
+                    mentorMode === "copilot"
+                      ? "bg-cyan-500/20 text-cyan-400 border border-cyan-500/30"
+                      : "text-zinc-400 hover:text-zinc-200"
+                  }`}
+                >
+                  Copilot Mode (Direct)
+                </button>
+              </div>
             </div>
+          </div>
+
+          {/* Collapsible API Key & Provider Settings Panel */}
+          {showApiSettings && (
+            <div className="p-4 rounded-xl border border-zinc-800 bg-zinc-950/90 space-y-3">
+              <div className="flex items-center justify-between">
+                <span className="text-xs font-semibold text-zinc-200 flex items-center gap-1.5">
+                  <Settings2 className="h-3.5 w-3.5 text-emerald-400" />
+                  Custom Cloud LLM API Key Configuration
+                </span>
+                <span className="text-[11px] text-zinc-500 font-mono">
+                  Stored securely in local browser
+                </span>
+              </div>
+
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                <div className="sm:col-span-2 space-y-1">
+                  <label className="text-[11px] font-mono text-zinc-400 block">API Key (OpenAI / DO Gradient / Groq / Anthropic)</label>
+                  <div className="flex gap-2">
+                    <input
+                      type="password"
+                      placeholder="sk-... or grad_... or gsk_..."
+                      value={customApiKey}
+                      onChange={(e) => setCustomApiKey(e.target.value)}
+                      className="flex-1 p-2 rounded-lg border border-zinc-800 bg-zinc-900 text-xs font-mono text-zinc-200 placeholder-zinc-600 focus:outline-none focus:border-emerald-500"
+                    />
+                    <button
+                      type="button"
+                      onClick={() => handleSaveApiKey(customApiKey, selectedProvider)}
+                      className="px-3 py-1.5 rounded-lg bg-emerald-500 hover:bg-emerald-400 text-zinc-950 font-semibold text-xs transition-colors cursor-pointer"
+                    >
+                      Save Key
+                    </button>
+                    {customApiKey && (
+                      <button
+                        type="button"
+                        onClick={() => handleSaveApiKey("", selectedProvider)}
+                        className="px-2.5 py-1.5 rounded-lg bg-zinc-800 hover:bg-zinc-700 text-zinc-400 hover:text-zinc-200 text-xs transition-colors cursor-pointer"
+                      >
+                        Clear
+                      </button>
+                    )}
+                  </div>
+                </div>
+
+                <div className="space-y-1">
+                  <label className="text-[11px] font-mono text-zinc-400 block">Inference Provider</label>
+                  <select
+                    value={selectedProvider}
+                    onChange={(e) => {
+                      setSelectedProvider(e.target.value);
+                      handleSaveApiKey(customApiKey, e.target.value);
+                    }}
+                    className="w-full p-2 rounded-lg border border-zinc-800 bg-zinc-900 text-xs text-zinc-200 focus:outline-none focus:border-emerald-500"
+                  >
+                    <option value="auto">Auto-detect from Key Prefix</option>
+                    <option value="openai">OpenAI (GPT-4o-mini)</option>
+                    <option value="gradient">DigitalOcean Gradient™ AI Agentic Cloud</option>
+                    <option value="groq">Groq Fast Inference (Llama 3.1)</option>
+                    <option value="anthropic">Anthropic Claude</option>
+                  </select>
+                </div>
+              </div>
+
+              {keySavedNotification && (
+                <div className="text-[11px] text-emerald-400 font-mono flex items-center gap-1.5">
+                  <CheckCircle2 className="h-3.5 w-3.5" />
+                  API key configuration successfully updated and saved locally!
+                </div>
+              )}
+
+              <p className="text-[10px] text-zinc-500 leading-relaxed">
+                Tip: Leave blank to use zero-cost local Ollama inference (`gemma4:e2b`). If supplied, repository questions and code explanations will be accelerated via your designated cloud LLM provider.
+              </p>
+            </div>
+          )}
+
+          {/* Active Model Status Bar */}
+          <div className="flex items-center justify-between px-3 py-1.5 rounded-lg bg-zinc-950/80 border border-zinc-800/80 text-[11px] font-mono text-zinc-400">
+            <span className="flex items-center gap-1.5">
+              <span className={`h-2 w-2 rounded-full ${customApiKey.trim() ? "bg-cyan-400 animate-pulse" : "bg-emerald-400"}`}></span>
+              {customApiKey.trim() ? "Cloud Provider: Custom Key Active" : "Engine: Local Ollama (Offline Capable)"}
+            </span>
+            <span className="text-zinc-500">AST Context Injection: 8 chunks max</span>
           </div>
 
           {/* Chat Messages */}
@@ -754,6 +926,11 @@ export default function RepoWorkspacePage({
                 >
                   <div className="flex items-center justify-between text-[10px] text-zinc-500 font-mono mb-1">
                     <span>{msg.role === "user" ? "You" : `FirstPatch Mentor (${msg.model || 'Local Model'})`}</span>
+                    {msg.apiKeyUsed && (
+                      <span className="px-1.5 py-0.5 rounded text-[9px] bg-cyan-500/10 text-cyan-300 border border-cyan-500/20">
+                        ⚡ Cloud Key
+                      </span>
+                    )}
                   </div>
                   <div className="whitespace-pre-wrap">{msg.content}</div>
 

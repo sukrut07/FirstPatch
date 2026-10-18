@@ -21,6 +21,8 @@ export default function MentorPage() {
   const [input, setInput] = useState("");
   const [messages, setMessages] = useState<any[]>([]);
   const [loading, setLoading] = useState(false);
+  const [customApiKey, setCustomApiKey] = useState("");
+  const [selectedProvider, setSelectedProvider] = useState<string>("auto");
 
   useEffect(() => {
     listRepositories().then((list) => {
@@ -29,6 +31,12 @@ export default function MentorPage() {
         setSelectedRepo(list[0].id);
       }
     });
+    if (typeof window !== "undefined") {
+      const savedKey = localStorage.getItem("firstpatch_api_key");
+      if (savedKey) setCustomApiKey(savedKey);
+      const savedProv = localStorage.getItem("firstpatch_provider");
+      if (savedProv) setSelectedProvider(savedProv);
+    }
   }, []);
 
   const handleSend = async (e: React.FormEvent) => {
@@ -47,13 +55,16 @@ export default function MentorPage() {
         repositoryId: selectedRepo,
         question: userText,
         mode: mode,
-        skillLevel: skillLevel
+        skillLevel: skillLevel,
+        apiKey: customApiKey || undefined,
+        provider: selectedProvider !== "auto" ? selectedProvider : undefined
       });
       setMessages([...newMsgs, {
         role: "assistant",
         content: res.answer,
         evidence: res.evidence,
-        model: res.model_used
+        model: res.model_used,
+        apiKeyUsed: res.api_key_used
       }]);
     } catch (err: any) {
       setMessages([...newMsgs, {

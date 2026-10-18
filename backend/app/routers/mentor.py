@@ -4,6 +4,7 @@ from pydantic import BaseModel
 from typing import Optional, List, Dict, Any
 from backend.app.services.mentor_service import mentor_service
 from backend.app.services.ollama_service import ollama_service
+from backend.app.services.cloud_llm_service import cloud_llm_service
 from backend.app.services.retrieval_service import retrieval_service
 
 router = APIRouter(prefix="/api/mentor", tags=["AI Mentor"])
@@ -14,6 +15,9 @@ class AskMentorRequest(BaseModel):
     mode: Optional[str] = "learn"  # "learn" or "copilot"
     conversation_id: Optional[str] = None
     skill_level: Optional[str] = "Beginner"
+    api_key: Optional[str] = None
+    provider: Optional[str] = None
+    model: Optional[str] = None
 
 class ExplainCodeRequest(BaseModel):
     repository_id: str
@@ -21,12 +25,16 @@ class ExplainCodeRequest(BaseModel):
     start_line: Optional[int] = 1
     end_line: Optional[int] = 50
     code_snippet: str
+    api_key: Optional[str] = None
+    provider: Optional[str] = None
 
 class PlanContributionRequest(BaseModel):
     repository_id: str
     issue_id: Optional[str] = None
     issue_title: str
     issue_description: str
+    api_key: Optional[str] = None
+    provider: Optional[str] = None
 
 @router.post("/ask")
 async def ask_mentor(req: AskMentorRequest):
@@ -35,7 +43,10 @@ async def ask_mentor(req: AskMentorRequest):
         question=req.question,
         mode=req.mode or "learn",
         conversation_id=req.conversation_id,
-        skill_level=req.skill_level or "Beginner"
+        skill_level=req.skill_level or "Beginner",
+        api_key=req.api_key,
+        provider=req.provider,
+        model=req.model
     )
     return result
 
@@ -49,19 +60,33 @@ async def explain_code(req: ExplainCodeRequest):
         "2. Step-by-step walkthrough of the key logic.\n"
         "3. Any edge cases or potential failure modes to consider."
     )
-    ollama_status = await ollama_service.get_status()
-    if ollama_status["online"]:
+    explanation = None
+    if req.api_key:
         try:
-            res = await ollama_service.generate_response(prompt=prompt, temperature=0.1)
-            explanation = res["response"]
+            cloud_res = await cloud_llm_service.generate_response(
+                prompt=prompt,
+                api_key=req.api_key,
+                provider=req.provider,
+                temperature=0.1
+            )
+            explanation = cloud_res["response"]
         except Exception:
-            explanation = f"Code in `{req.file_path}` ({req.start_line}-{req.end_line}) defines functional logic for this module."
-    else:
-        explanation = (
-            f"### 📍 Code Analysis for `{req.file_path}` (Lines {req.start_line}-{req.end_line})\n"
-            f"- Defines core logic and interface boundaries.\n"
-            f"- Connect local Ollama (`ollama serve`) for full interactive architectural explanations."
-        )
+            pass
+
+    if not explanation:
+        ollama_status = await ollama_service.get_status()
+        if ollama_status["online"]:
+            try:
+                res = await ollama_service.generate_response(prompt=prompt, temperature=0.1)
+                explanation = res["response"]
+            except Exception:
+                explanation = f"Code in `{req.file_path}` ({req.start_line}-{req.end_line}) defines functional logic for this module."
+        else:
+            explanation = (
+                f"### 📍 Code Analysis for `{req.file_path}` (Lines {req.start_line}-{req.end_line})\n"
+                f"- Defines core logic and interface boundaries.\n"
+                f"- Connect local Ollama (`ollama serve`) or provide an API Key for full interactive architectural explanations."
+            )
 
     return {
         "file_path": req.file_path,
@@ -99,18 +124,37 @@ Generate a grounded step-by-step contribution plan. Return valid JSON with this 
   "definition_of_done": "All tests pass without regression and PR checklist fulfilled."
 }}
 """
-    ollama_status = await ollama_service.get_status()
     plan_data = None
-    if ollama_status["online"]:
+    if req.api_key:
         try:
-            res = await ollama_service.generate_response(
+            cloud_res = await cloud_llm_service.generate_response(
                 prompt=prompt,
-                format_json=True,
+                system_prompt="You are FirstPatch AI. Return strictly valid JSON adhering to the requested schema.",
+                api_key=req.api_key,
+                provider=req.provider,
                 temperature=0.1
             )
-            plan_data = json.loads(res["response"])
+            raw = cloud_res["response"].strip()
+            if "```json" in raw:
+                raw = raw.split("```json")[1].split("```")[0].strip()
+            elif "```" in raw:
+                raw = raw.split("```")[1].split("```")[0].strip()
+            plan_data = json.loads(raw)
         except Exception:
             pass
+
+    if not plan_data:
+        ollama_status = await ollama_service.get_status()
+        if ollama_status["online"]:
+            try:
+                res = await ollama_service.generate_response(
+                    prompt=prompt,
+                    format_json=True,
+                    temperature=0.1
+                )
+                plan_data = json.loads(res["response"])
+            except Exception:
+                pass
 
     if not plan_data:
         # High quality deterministic template

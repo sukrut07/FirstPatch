@@ -38,6 +38,7 @@ export default function Navbar() {
     { href: "/learn", label: "Beginner Guide", icon: BookOpen },
     { href: "/mentor", label: "AI Mentor", icon: Sparkles },
     { href: "/contributions", label: "Flight Recorder", icon: GitPullRequest },
+    { href: "/compliance", label: "Trust Audit", icon: ShieldCheck },
   ];
 
   return (

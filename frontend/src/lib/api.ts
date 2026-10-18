@@ -85,6 +85,9 @@ export async function askMentor(params: {
   mode?: "learn" | "copilot";
   conversationId?: string;
   skillLevel?: string;
+  apiKey?: string;
+  provider?: string;
+  model?: string;
 }) {
   const res = await fetch(`${API_BASE}/api/mentor/ask`, {
     method: "POST",
@@ -94,7 +97,10 @@ export async function askMentor(params: {
       question: params.question,
       mode: params.mode || "learn",
       conversation_id: params.conversationId,
-      skill_level: params.skillLevel || "Beginner"
+      skill_level: params.skillLevel || "Beginner",
+      api_key: params.apiKey || undefined,
+      provider: params.provider || undefined,
+      model: params.model || undefined
     })
   });
   if (!res.ok) throw new Error("Mentor query failed.");
@@ -297,6 +303,12 @@ export async function updateIssueHypothesisStatus(owner: string, repo: string, n
 export async function getMaintainerDrafts(owner: string, repo: string, number: number) {
   const res = await fetch(`${API_BASE}/api/issues/${owner}/${repo}/${number}/maintainer-drafts`, { cache: "no-store" });
   if (!res.ok) throw new Error("Failed to load maintainer communication drafts.");
+  return await res.json();
+}
+
+export async function getComplianceReport() {
+  const res = await fetch(`${API_BASE}/api/compliance/report`, { cache: "no-store" });
+  if (!res.ok) throw new Error("Failed to load compliance report.");
   return await res.json();
 }
 

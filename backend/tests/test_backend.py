@@ -297,4 +297,27 @@ def test_maintainer_drafts_and_triage_persistence():
         cursor.execute("SELECT * FROM hypothesis_logs WHERE issue_id='pallets/flask:42'")
         assert cursor.fetchone()["status"] == "confirmed"
 
+@pytest.mark.asyncio
+async def test_cloud_llm_service_provider_resolution_and_api_key():
+    from backend.app.services.cloud_llm_service import cloud_llm_service
+    from backend.app.services.mentor_service import mentor_service
+
+    # Test key provider resolution
+    assert cloud_llm_service.resolve_provider("sk-123456789") == "openai"
+    assert cloud_llm_service.resolve_provider("sk-ant-api03-1234") == "anthropic"
+    assert cloud_llm_service.resolve_provider("gsk_abc12345") == "groq"
+    assert cloud_llm_service.resolve_provider("grad_workspace_key") == "gradient"
+    assert cloud_llm_service.resolve_provider(None, provider="DigitalOcean Gradient") == "gradient"
+
+    # Test asking mentor with user-provided API key (gracefully falls back on mock key without crash)
+    res = await mentor_service.ask_question(
+        repository_id="octocat/Hello-World",
+        question="Where are configuration parameters defined?",
+        api_key="sk-test-mock-key-for-testing",
+        provider="openai"
+    )
+    assert "answer" in res
+    assert res["api_key_used"] is True
+    assert "grounding_audit" in res
+
 
