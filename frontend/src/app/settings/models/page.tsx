@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { fetchModelStatus } from "@/lib/api";
+import { fetchModelStatus, testModelInference, updateActiveModel } from "@/lib/api";
 import { Cpu, CheckCircle2, AlertCircle, RefreshCw, Terminal, Sparkles } from "lucide-react";
 
 export default function ModelSettingsPage() {
@@ -27,13 +27,8 @@ export default function ModelSettingsPage() {
     setTesting(true);
     setTestResult(null);
     try {
-      const res = await fetch("http://127.0.0.1:8000/api/models/health-check", { method: "POST" });
-      const data = await res.json();
-      if (res.ok) {
-        setTestResult(data.test_output);
-      } else {
-        setTestResult(`Error: ${data.detail}`);
-      }
+      const data = await testModelInference();
+      setTestResult(data.test_output);
     } catch (e: any) {
       setTestResult(`Failed to connect to backend: ${e.message}`);
     } finally {
@@ -43,11 +38,7 @@ export default function ModelSettingsPage() {
 
   const handleUpdateModel = async () => {
     try {
-      await fetch("http://127.0.0.1:8000/api/settings/models", {
-        method: "PATCH",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ model_name: selectedModel })
-      });
+      await updateActiveModel(selectedModel);
       loadStatus();
       alert("Active model updated successfully.");
     } catch (e: any) {

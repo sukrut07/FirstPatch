@@ -141,7 +141,7 @@ export default function CompliancePage() {
         </div>
       ) : (
         <div className="p-8 text-center text-xs text-zinc-500 border border-dashed border-zinc-800 rounded-xl">
-          Unable to connect to backend compliance endpoint. Make sure uvicorn is running on port 8000.
+          Unable to connect to backend compliance endpoint. Make sure the backend service is running and accessible.
         </div>
       )}
     </div>

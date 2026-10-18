@@ -21,8 +21,11 @@ class Settings(BaseSettings):
     MAX_EVIDENCE_CHARS: int = 24000
     MAX_CONVERSATION_TURNS: int = 8
     
-    # SQLite Database
-    DATABASE_PATH: str = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "firstpatch.db")
+    # SQLite Database (uses /tmp on Vercel to ensure write permissions in serverless environments)
+    DATABASE_PATH: str = os.getenv(
+        "DATABASE_PATH",
+        "/tmp/firstpatch.db" if os.getenv("VERCEL") else os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "firstpatch.db")
+    )
     
     # GitHub API Configuration
     GITHUB_TOKEN: Optional[str] = None
@@ -37,7 +40,8 @@ class Settings(BaseSettings):
         "http://localhost:3000",
         "http://127.0.0.1:3000",
         "http://localhost:3001",
-        "http://127.0.0.1:3001"
+        "http://127.0.0.1:3001",
+        "*"
     ]
 
 settings = Settings()
