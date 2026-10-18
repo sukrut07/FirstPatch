@@ -12,7 +12,8 @@ import {
   Cpu, 
   ShieldCheck, 
   Sparkles,
-  Layers
+  Layers,
+  BookOpen
 } from "lucide-react";
 
 export default function Navbar() {
@@ -34,6 +35,7 @@ export default function Navbar() {
   const navLinks = [
     { href: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
     { href: "/explore", label: "Explore Repos", icon: Compass },
+    { href: "/learn", label: "Beginner Guide", icon: BookOpen },
     { href: "/mentor", label: "AI Mentor", icon: Sparkles },
     { href: "/contributions", label: "Flight Recorder", icon: GitPullRequest },
   ];

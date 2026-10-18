@@ -12,7 +12,9 @@ import {
   askMentor, 
   planContribution, 
   createContribution, 
-  diagnoseSetupError 
+  diagnoseSetupError,
+  getRepositoryDocumentation,
+  generateRepositoryDocumentation
 } from "@/lib/api";
 import { 
   Layers, 
@@ -33,7 +35,9 @@ import {
   Play,
   Copy,
   ChevronRight,
-  ShieldCheck
+  ShieldCheck,
+  FileText,
+  Download
 } from "lucide-react";
 
 export default function RepoWorkspacePage({
@@ -46,13 +50,19 @@ export default function RepoWorkspacePage({
   const repoId = `${owner}/${repo}`;
   const router = useRouter();
 
-  const [activeTab, setActiveTab] = useState<"overview" | "architecture" | "files" | "issues" | "evidence" | "doctor" | "mentor">("overview");
+  const [activeTab, setActiveTab] = useState<"overview" | "architecture" | "files" | "issues" | "evidence" | "doctor" | "mentor" | "docs">("overview");
   const [repoData, setRepoData] = useState<any>(null);
   const [files, setFiles] = useState<any[]>([]);
   const [selectedFile, setSelectedFile] = useState<any>(null);
   const [arch, setArch] = useState<any>(null);
   const [issues, setIssues] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
+
+  // Documentation State
+  const [docsData, setDocsData] = useState<any>(null);
+  const [selectedDocKey, setSelectedDocKey] = useState<"project_overview" | "architecture" | "beginner_setup" | "contribution_guide">("project_overview");
+  const [generatingDocs, setGeneratingDocs] = useState(false);
+  const [copiedDoc, setCopiedDoc] = useState(false);
 
   // Mentor Chat State
   const [question, setQuestion] = useState("");
@@ -86,11 +96,34 @@ export default function RepoWorkspacePage({
       setArch(archData);
       const issuesData = await discoverIssues(repoId, "Beginner");
       setIssues(issuesData);
+      try {
+        const docsRes = await getRepositoryDocumentation(owner, repo);
+        if (docsRes?.available_documents) setDocsData(docsRes.available_documents);
+      } catch {}
     } catch {
       // Graceful fallback
     } finally {
       setLoading(false);
     }
+  };
+
+  const handleGenerateDocs = async () => {
+    setGeneratingDocs(true);
+    try {
+      await generateRepositoryDocumentation(owner, repo);
+      const docsRes = await getRepositoryDocumentation(owner, repo);
+      if (docsRes?.available_documents) setDocsData(docsRes.available_documents);
+    } catch (e: any) {
+      alert("Failed to generate documentation: " + e.message);
+    } finally {
+      setGeneratingDocs(false);
+    }
+  };
+
+  const handleCopyDoc = (text: string) => {
+    navigator.clipboard.writeText(text);
+    setCopiedDoc(true);
+    setTimeout(() => setCopiedDoc(false), 2000);
   };
 
   const loadFile = async (path: string) => {
@@ -176,6 +209,7 @@ export default function RepoWorkspacePage({
     { id: "files", label: "File Explorer", icon: FileCode2 },
     { id: "issues", label: `Issues (${issues.length})`, icon: Compass },
     { id: "evidence", label: "Evidence Ledger", icon: ShieldCheck },
+    { id: "docs", label: "Documentation", icon: BookOpen },
     { id: "doctor", label: "Setup Doctor", icon: Stethoscope },
     { id: "mentor", label: "AI Mentor", icon: Sparkles },
   ];
@@ -760,6 +794,126 @@ export default function RepoWorkspacePage({
               {asking ? "Reasoning..." : "Send"}
             </button>
           </form>
+        </div>
+      )}
+
+      {/* DOCUMENTATION TAB */}
+      {activeTab === "docs" && (
+        <div className="space-y-6">
+          {/* Docs Header */}
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 rounded-xl border border-zinc-800 bg-zinc-900/40 p-5">
+            <div>
+              <div className="flex items-center gap-2">
+                <BookOpen className="h-4 w-4 text-emerald-400" />
+                <h2 className="text-sm font-semibold text-zinc-200">
+                  Standardized Repository Documentation
+                </h2>
+              </div>
+              <p className="text-xs text-zinc-400 mt-1 max-w-2xl">
+                Deterministic markdown files emitted to <code className="text-emerald-400 font-mono text-[11px]">docs/generated/</code> summarizing project mission, Mermaid component dataflow, local setup, and PR conventions.
+              </p>
+            </div>
+            <button
+              onClick={handleGenerateDocs}
+              disabled={generatingDocs}
+              className="flex items-center gap-1.5 px-4 py-2 rounded-lg bg-emerald-500 hover:bg-emerald-400 text-zinc-950 font-semibold text-xs transition-colors cursor-pointer disabled:opacity-50 shrink-0 self-start sm:self-auto"
+            >
+              {generatingDocs ? (
+                <>
+                  <span className="h-3 w-3 border-2 border-zinc-950 border-t-transparent rounded-full animate-spin"></span>
+                  Generating...
+                </>
+              ) : (
+                <>
+                  <Sparkles className="h-3.5 w-3.5" />
+                  {docsData ? "Regenerate Docs" : "Generate Documentation"}
+                </>
+              )}
+            </button>
+          </div>
+
+          {/* Document Selector Pills */}
+          <div className="flex flex-wrap items-center gap-2">
+            {[
+              { key: "project_overview", label: "📖 Project Overview", file: "PROJECT_OVERVIEW.md" },
+              { key: "architecture", label: "🏗️ Architecture & Dataflow", file: "ARCHITECTURE.md" },
+              { key: "beginner_setup", label: "🛠️ Beginner Setup Guide", file: "BEGINNER_SETUP.md" },
+              { key: "contribution_guide", label: "📜 Contribution Guide", file: "CONTRIBUTION_GUIDE.md" },
+            ].map((doc) => {
+              const isSelected = selectedDocKey === doc.key;
+              const isAvailable = Boolean(docsData?.[doc.key]);
+              return (
+                <button
+                  key={doc.key}
+                  onClick={() => setSelectedDocKey(doc.key as any)}
+                  className={`flex items-center gap-2 px-3.5 py-2 rounded-lg text-xs font-medium border transition-colors cursor-pointer ${
+                    isSelected
+                      ? "border-emerald-500 bg-emerald-500/10 text-emerald-300 font-semibold"
+                      : "border-zinc-800 bg-zinc-900/60 text-zinc-400 hover:text-zinc-200 hover:border-zinc-700"
+                  }`}
+                >
+                  <span>{doc.label}</span>
+                  {isAvailable && (
+                    <span className="h-1.5 w-1.5 rounded-full bg-emerald-400" />
+                  )}
+                </button>
+              );
+            })}
+          </div>
+
+          {/* Document Content Box */}
+          {docsData && docsData[selectedDocKey] ? (
+            <div className="rounded-xl border border-zinc-800 bg-zinc-900/60 overflow-hidden">
+              <div className="flex items-center justify-between px-4 py-2.5 bg-zinc-950 border-b border-zinc-800 text-xs">
+                <span className="font-mono text-zinc-400 flex items-center gap-2">
+                  <FileText className="h-3.5 w-3.5 text-emerald-400" />
+                  docs/generated/{selectedDocKey === "project_overview" ? "PROJECT_OVERVIEW.md" : selectedDocKey === "architecture" ? "ARCHITECTURE.md" : selectedDocKey === "beginner_setup" ? "BEGINNER_SETUP.md" : "CONTRIBUTION_GUIDE.md"}
+                </span>
+                <div className="flex items-center gap-2">
+                  <button
+                    onClick={() => handleCopyDoc(docsData[selectedDocKey])}
+                    className="flex items-center gap-1.5 px-2.5 py-1 rounded bg-zinc-800 hover:bg-zinc-700 text-zinc-300 text-xs font-mono transition-colors cursor-pointer"
+                  >
+                    <Copy className="h-3 w-3" />
+                    {copiedDoc ? "Copied!" : "Copy Markdown"}
+                  </button>
+                  <a
+                    href={`data:text/markdown;charset=utf-8,${encodeURIComponent(docsData[selectedDocKey])}`}
+                    download={`${selectedDocKey}.md`}
+                    className="flex items-center gap-1.5 px-2.5 py-1 rounded bg-zinc-800 hover:bg-zinc-700 text-zinc-300 text-xs font-mono transition-colors cursor-pointer"
+                  >
+                    <Download className="h-3 w-3" />
+                    Download
+                  </a>
+                </div>
+              </div>
+
+              <div className="p-5 font-mono text-xs text-zinc-200 whitespace-pre-wrap leading-relaxed overflow-x-auto max-h-[600px] bg-zinc-950/70">
+                {docsData[selectedDocKey]}
+              </div>
+            </div>
+          ) : (
+            <div className="rounded-xl border border-dashed border-zinc-800 bg-zinc-900/20 p-12 text-center space-y-4">
+              <div className="h-12 w-12 rounded-xl bg-zinc-800/80 border border-zinc-700 flex items-center justify-center mx-auto text-emerald-400">
+                <BookOpen className="h-6 w-6" />
+              </div>
+              <div className="space-y-1">
+                <h3 className="text-sm font-semibold text-zinc-200">
+                  Documentation Not Generated Yet
+                </h3>
+                <p className="text-xs text-zinc-400 max-w-md mx-auto">
+                  Click below to synthesize AST symbols, directory layout, test structure, and contribution rules into clean, exportable Markdown documents.
+                </p>
+              </div>
+              <button
+                onClick={handleGenerateDocs}
+                disabled={generatingDocs}
+                className="inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-emerald-500 hover:bg-emerald-400 text-zinc-950 font-semibold text-xs transition-colors cursor-pointer disabled:opacity-50"
+              >
+                {generatingDocs ? "Synthesizing Documentation..." : "Generate Repository Documentation"}
+              </button>
+            </div>
+          )}
         </div>
       )}
     </div>

@@ -220,3 +220,35 @@ export async function resetDatabase() {
   const res = await fetch(`${API_BASE}/api/settings/reset-database`, { method: "POST" });
   return await res.json();
 }
+
+export async function getBeginnerGlossary() {
+  const res = await fetch(`${API_BASE}/api/learning/glossary`, { cache: "no-store" });
+  if (!res.ok) return { glossary: [] };
+  return await res.json();
+}
+
+export async function getContributionSequence() {
+  const res = await fetch(`${API_BASE}/api/learning/contribution-sequence`, { cache: "no-store" });
+  if (!res.ok) return { sequence: [] };
+  return await res.json();
+}
+
+export async function getRepositoryDocumentation(owner: string, repo: string) {
+  const res = await fetch(`${API_BASE}/api/repositories/${owner}/${repo}/documentation`, { cache: "no-store" });
+  if (!res.ok) return null;
+  return await res.json();
+}
+
+export async function generateRepositoryDocumentation(owner: string, repo: string) {
+  const res = await fetch(`${API_BASE}/api/repositories/${owner}/${repo}/generate-docs`, { method: "POST" });
+  if (!res.ok) throw new Error("Documentation generation failed.");
+  return await res.json();
+}
+
+export async function runModelBenchmark(model?: string) {
+  const url = model ? `${API_BASE}/api/benchmark/run?model=${encodeURIComponent(model)}` : `${API_BASE}/api/benchmark/run`;
+  const res = await fetch(url, { method: "POST" });
+  if (!res.ok) throw new Error("Benchmark run failed.");
+  return await res.json();
+}
+

@@ -172,3 +172,43 @@ async def test_benchmark_service(monkeypatch):
     assert report["pass_rate_percent"] == 100.0
     assert report["average_tokens_per_sec"] > 0
 
+def test_claim_safety_and_stacktrace():
+    # 1. Test claim safety
+    open_issue = {
+        "title": "Fix doc typo",
+        "body": "There is a small typo in the README.md documentation file that needs fixing.",
+        "labels": ["documentation"]
+    }
+    safety1 = issue_service.check_claim_safety(open_issue)
+    assert safety1["is_safe_to_claim"] is True
+    assert safety1["status"] == "ACTIONABLE_SIGNAL_FOUND"
+
+    assigned_issue = {"title": "Fix bug", "body": "Crashing", "assignee": "sukrut07"}
+    safety2 = issue_service.check_claim_safety(assigned_issue)
+    assert safety2["is_safe_to_claim"] is False
+    assert safety2["status"] == "POSSIBLY_CLAIMED"
+
+    # 2. Test stacktrace extractor
+    trace_text = """
+    Traceback (most recent call last):
+      File "src/flask/config.py", line 42, in from_prefixed_env
+        val = os.environ[key]
+    KeyError: 'SECRET_KEY'
+    """
+    coords = issue_service.extract_stacktrace_coordinates(trace_text)
+    assert len(coords) == 1
+    assert coords[0]["file_path"] == "src/flask/config.py"
+    assert coords[0]["target_line"] == 42
+    assert coords[0]["match_type"] == "STACKTRACE"
+
+def test_documentation_generator():
+    from backend.app.services.documentation_service import documentation_service
+    repo_id = "octocat/Hello-World"
+    doc_res = documentation_service.generate_all_documentation(repo_id)
+    assert doc_res["repository_id"] == repo_id
+    assert os.path.exists(doc_res["documents"]["project_overview"])
+    assert os.path.exists(doc_res["documents"]["architecture"])
+    assert os.path.exists(doc_res["documents"]["beginner_setup"])
+    assert os.path.exists(doc_res["documents"]["contribution_guide"])
+
+

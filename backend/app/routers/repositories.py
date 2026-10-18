@@ -1,3 +1,4 @@
+import os
 import json
 import uuid
 from fastapi import APIRouter, HTTPException, Query
@@ -6,6 +7,7 @@ from typing import Optional, List, Dict, Any
 from backend.app.services.github_service import github_service, parse_repo_identifier
 from backend.app.services.chunking_service import chunk_file_content
 from backend.app.services.ast_service import analyze_python_source, analyze_generic_source
+from backend.app.services.documentation_service import documentation_service
 from backend.app.database import get_db, get_iso_now
 
 router = APIRouter(prefix="/api/repositories", tags=["Repositories"])
@@ -318,3 +320,39 @@ async def delete_repository(owner: str, repo: str):
         cursor = conn.cursor()
         cursor.execute("DELETE FROM repositories WHERE id = ?", (repo_id,))
     return {"status": "deleted", "repository_id": repo_id}
+
+@router.post("/{owner}/{repo}/generate-docs")
+async def generate_repository_docs(owner: str, repo: str):
+    """Generates standardized markdown documentation (Overview, Architecture, Setup, Contribution Guide)."""
+    repo_id = f"{owner}/{repo}"
+    try:
+        report = documentation_service.generate_all_documentation(repo_id)
+        return {"status": "success", "report": report}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+@router.get("/{owner}/{repo}/documentation")
+async def get_repository_docs(owner: str, repo: str):
+    """Retrieves generated documentation for an analyzed repository."""
+    repo_id = f"{owner}/{repo}"
+    out_dir = documentation_service.output_dir
+    docs = {}
+    doc_files = {
+        "project_overview": "PROJECT_OVERVIEW.md",
+        "architecture": "ARCHITECTURE.md",
+        "beginner_setup": "BEGINNER_SETUP.md",
+        "contribution_guide": "CONTRIBUTION_GUIDE.md"
+    }
+    for key, filename in doc_files.items():
+        filepath = os.path.join(out_dir, filename)
+        if os.path.exists(filepath):
+            with open(filepath, "r", encoding="utf-8") as f:
+                docs[key] = f.read()
+        else:
+            docs[key] = None
+
+    return {
+        "repository_id": repo_id,
+        "available_documents": docs
+    }
+
