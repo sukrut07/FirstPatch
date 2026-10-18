@@ -9,6 +9,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from app.core.config import get_settings
 from app.core.logging import configure_logging
 from app.api.routes import health, repositories, issues, mentor, verification
+from app.api.routes.dataset import router as dataset_router, benchmark_router
 from app.db.database import init_db
 
 
@@ -49,6 +50,8 @@ def create_app() -> FastAPI:
     app.include_router(issues.router, prefix="/api/issues")
     app.include_router(mentor.router, prefix="/api/mentor")
     app.include_router(verification.router, prefix="/api/verification")
+    app.include_router(dataset_router)
+    app.include_router(benchmark_router)
 
     return app
 
