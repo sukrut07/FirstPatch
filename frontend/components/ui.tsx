@@ -128,7 +128,7 @@ export function IconLayers({ className = "w-4 h-4" }: { className?: string }) {
 }
 
 // ---------------------------------------------------------------------------
-// Reusable UI Components (light-mode)
+// Reusable UI Components
 // ---------------------------------------------------------------------------
 
 /** Score bar showing normalized 0–1 score */
@@ -210,7 +210,8 @@ export function EmptyState({ title, description, action }: {
 }) {
   return (
     <div className="flex flex-col items-center justify-center py-20 text-center animate-in">
-      <div className="w-20 h-20 rounded-3xl bg-lavender-100 border border-lavender-200 flex items-center justify-center mb-5 shadow-panel-inner-glow">
+      <div className="w-20 h-20 rounded-3xl bg-lavender-100 border border-lavender-200 flex items-center justify-center mb-5"
+        style={{ boxShadow: "inset 0 2px 6px rgba(255,255,255,0.9), 0 2px 12px rgba(139,92,246,0.08)" }}>
         <IconSearch className="w-9 h-9 text-brand-400" />
       </div>
       <h3 className="text-base font-bold text-gray-700 mb-2">{title}</h3>
@@ -263,7 +264,7 @@ export function ExternalLink({ href, children, className = "" }: {
 
 /** Label chip for GitHub issue labels */
 export function IssueLabel({ name, color }: { name: string; color?: string }) {
-  const bgColor  = color ? `#${color}20` : undefined;
+  const bgColor   = color ? `#${color}20` : undefined;
   const textColor = color ? `#${color}` : undefined;
   return (
     <span

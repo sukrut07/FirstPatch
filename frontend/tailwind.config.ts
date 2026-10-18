@@ -1,4 +1,4 @@
-﻿import type { Config } from "tailwindcss";
+import type { Config } from "tailwindcss";
 
 const config: Config = {
   content: [
@@ -64,18 +64,18 @@ const config: Config = {
       backgroundImage: {
         "brand-gradient":    "linear-gradient(135deg, #6366f1 0%, #7c3aed 100%)",
         "lavender-gradient": "linear-gradient(135deg, #ede9fe 0%, #ddd6fe 60%, #e0e7ff 100%)",
-        "panel-gradient":    "linear-gradient(135deg, #f0eeff 0%, #e8e4fb 50%, #ede9fe 100%)",
-        "card-glow":         "radial-gradient(ellipse at 50% 0%, rgba(99,102,241,0.08) 0%, transparent 70%)",
-        "hero-gradient":     "radial-gradient(ellipse at 30% 40%, rgba(139,92,246,0.12) 0%, transparent 60%), radial-gradient(ellipse at 70% 60%, rgba(99,102,241,0.08) 0%, transparent 50%)",
+        "panel-gradient":    "linear-gradient(138deg, #ede9fe 0%, #e0e7ff 50%, #eef2ff 100%)",
+        "card-glow":         "radial-gradient(ellipse at 50% 0%, rgba(99,102,241,0.09) 0%, transparent 70%)",
+        "hero-gradient":     "radial-gradient(ellipse at 30% 40%, rgba(139,92,246,0.14) 0%, transparent 60%), radial-gradient(ellipse at 70% 60%, rgba(99,102,241,0.09) 0%, transparent 50%)",
       },
       boxShadow: {
-        "brand-sm":    "0 0 0 1px rgba(99,102,241,0.25)",
-        "brand-md":    "0 0 20px rgba(99,102,241,0.15), 0 0 0 1px rgba(99,102,241,0.2)",
-        "card":        "0 1px 3px rgba(99,102,241,0.06), 0 4px 16px rgba(99,102,241,0.04), 0 0 0 1px rgba(99,102,241,0.08)",
-        "card-hover":  "0 8px 32px rgba(99,102,241,0.14), 0 0 0 1px rgba(99,102,241,0.18)",
-        "panel":       "0 2px 8px rgba(99,102,241,0.08), 0 0 0 1px rgba(139,92,246,0.12)",
-        "input":       "0 1px 2px rgba(99,102,241,0.06), 0 0 0 1px rgba(99,102,241,0.12)",
-        "input-focus": "0 0 0 3px rgba(99,102,241,0.15), 0 0 0 1px rgba(99,102,241,0.4)",
+        "brand-sm":   "0 0 0 1px rgba(99,102,241,0.25)",
+        "brand-md":   "0 0 20px rgba(99,102,241,0.16), 0 0 0 1px rgba(99,102,241,0.22)",
+        "card":       "0 2px 16px -2px rgba(100,116,139,0.09), 0 1px 2px rgba(0,0,0,0.03)",
+        "card-hover": "0 10px 36px -6px rgba(99,102,241,0.18), 0 2px 6px rgba(0,0,0,0.04), 0 0 0 1px rgba(99,102,241,0.12)",
+        "panel":      "0 2px 8px rgba(99,102,241,0.08), 0 0 0 1px rgba(139,92,246,0.12)",
+        "input-focus":"0 0 0 3px rgba(99,102,241,0.15), 0 0 0 1px rgba(99,102,241,0.42)",
+        "panel-inner-glow": "inset 0 2px 6px rgba(255,255,255,0.9), 0 2px 12px rgba(139,92,246,0.08)",
       },
       borderRadius: {
         "2xl": "1rem",
@@ -83,9 +83,9 @@ const config: Config = {
         "4xl": "2rem",
       },
       animation: {
-        "fade-in":    "fadeIn 0.35s ease-out",
-        "slide-up":   "slideUp 0.4s cubic-bezier(0.16,1,0.3,1)",
-        "slide-in":   "slideIn 0.4s cubic-bezier(0.16,1,0.3,1)",
+        "fade-in":    "fadeIn 0.35s ease-out both",
+        "slide-up":   "slideUp 0.42s cubic-bezier(0.16,1,0.3,1) both",
+        "slide-in":   "slideIn 0.4s cubic-bezier(0.16,1,0.3,1) both",
         "pulse-slow": "pulse 3s cubic-bezier(0.4,0,0.6,1) infinite",
         "shimmer":    "shimmer 1.8s linear infinite",
         "float":      "float 6s ease-in-out infinite",
@@ -93,7 +93,7 @@ const config: Config = {
       },
       keyframes: {
         fadeIn:    { from: { opacity: "0" }, to: { opacity: "1" } },
-        slideUp:   { from: { opacity: "0", transform: "translateY(16px)" }, to: { opacity: "1", transform: "translateY(0)" } },
+        slideUp:   { from: { opacity: "0", transform: "translateY(18px)" }, to: { opacity: "1", transform: "translateY(0)" } },
         slideIn:   { from: { opacity: "0", transform: "translateX(-12px)" }, to: { opacity: "1", transform: "translateX(0)" } },
         shimmer:   { from: { backgroundPosition: "-200% 0" }, to: { backgroundPosition: "200% 0" } },
         float:     { "0%,100%": { transform: "translateY(0)" }, "50%": { transform: "translateY(-8px)" } },

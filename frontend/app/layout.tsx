@@ -1,4 +1,4 @@
-﻿import type { Metadata } from "next";
+import type { Metadata } from "next";
 import { Outfit } from "next/font/google";
 import "./globals.css";
 
@@ -28,7 +28,7 @@ export default function RootLayout({
 }) {
   return (
     <html lang="en" className={outfit.variable}>
-      <body className="min-h-screen font-sans antialiased" style={{ background: "#f0f1f8" }}>
+      <body className="min-h-screen font-sans antialiased" style={{ background: "#eef0f7" }}>
         {children}
       </body>
     </html>

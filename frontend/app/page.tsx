@@ -37,6 +37,9 @@ import {
 
 type View = "home" | "overview" | "issues" | "plan" | "settings";
 
+/* ─────────────────────────────────────────────────────────────────────
+   Nav
+───────────────────────────────────────────────────────────────────── */
 function Nav({ view, setView, hasRepo, health }: {
   view: View; setView: (v: View) => void; hasRepo: boolean; health: HealthResponse | null;
 }) {
@@ -52,8 +55,10 @@ function Nav({ view, setView, hasRepo, health }: {
       <div className="max-w-6xl mx-auto px-4 sm:px-6 flex items-center justify-between gap-4 h-16">
         <div className="flex items-center gap-6">
           <button onClick={() => setView("home")} className="flex items-center gap-2.5 shrink-0 group" id="nav-logo">
-            <div className="w-8 h-8 rounded-xl flex items-center justify-center text-white text-xs font-black shadow-[0_4px_12px_rgba(124,58,237,0.3)] group-hover:scale-105 transition-transform"
-              style={{ background: "linear-gradient(135deg, #6366f1 0%, #7c3aed 100%)" }}>
+            <div
+              className="w-8 h-8 rounded-xl flex items-center justify-center text-white text-xs font-black transition-transform group-hover:scale-105"
+              style={{ background: "linear-gradient(135deg, #6366f1 0%, #7c3aed 100%)", boxShadow: "0 4px 14px rgba(124,58,237,0.32)" }}
+            >
               FP
             </div>
             <span className="text-sm font-bold text-gradient hidden sm:block tracking-tight">FirstPatch AI</span>
@@ -62,9 +67,11 @@ function Nav({ view, setView, hasRepo, health }: {
             {navItems.map((item) => (
               <button key={item.key} id={`nav-${item.key}`} disabled={item.disabled} onClick={() => setView(item.key)}
                 className={`px-3.5 py-1.5 rounded-xl text-xs sm:text-sm font-semibold transition-all duration-200 ${
-                  view === item.key ? "bg-white text-brand-700 shadow-[0_2px_8px_rgba(0,0,0,0.06)] border border-brand-100/80" :
-                  item.disabled ? "text-gray-400 cursor-not-allowed" :
-                  "text-gray-600 hover:text-brand-700 hover:bg-white/60"}`}>
+                  view === item.key
+                    ? "bg-white text-brand-700 shadow-[0_2px_8px_rgba(0,0,0,0.07)] border border-brand-100/80"
+                    : item.disabled
+                    ? "text-gray-400 cursor-not-allowed"
+                    : "text-gray-600 hover:text-brand-700 hover:bg-white/60"}`}>
                 {item.label}
               </button>
             ))}
@@ -87,6 +94,9 @@ function Nav({ view, setView, hasRepo, health }: {
   );
 }
 
+/* ─────────────────────────────────────────────────────────────────────
+   HomeView
+───────────────────────────────────────────────────────────────────── */
 function HomeView({ onAnalyze }: { onAnalyze: (url: string) => void }) {
   const [url, setUrl] = useState("");
   const [error, setError] = useState("");
@@ -118,9 +128,10 @@ function HomeView({ onAnalyze }: { onAnalyze: (url: string) => void }) {
 
   return (
     <main className="flex-1 px-4 sm:px-6 py-12 max-w-6xl mx-auto w-full">
-      {/* Hero Header */}
+
+      {/* ── Hero ── */}
       <div className="text-center mb-10 animate-in">
-        <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-white border border-brand-200/80 text-brand-700 text-xs font-bold mb-6 shadow-[0_2px_12px_rgba(124,58,237,0.08)]">
+        <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-white border border-brand-200/80 text-brand-700 text-xs font-bold mb-6 shadow-[0_2px_12px_rgba(124,58,237,0.09)]">
           <IconSparkle className="w-3.5 h-3.5 text-brand-500" />
           AI-Powered Open-Source Mentor
         </div>
@@ -128,17 +139,19 @@ function HomeView({ onAnalyze }: { onAnalyze: (url: string) => void }) {
           Make your <span className="text-gradient glow-brand">first patch</span>
           <br />with confidence
         </h1>
-        <p className="text-base sm:text-lg text-gray-600 leading-relaxed max-w-2xl mx-auto">
+        <p className="text-base sm:text-lg text-gray-500 leading-relaxed max-w-2xl mx-auto">
           Enter any public GitHub repository. FirstPatch AI inspects its structure, discovers
           beginner-friendly issues, and crafts an evidence-backed contribution roadmap.
         </p>
       </div>
 
-      {/* Prominent Primary Repository Input */}
-      <div className="max-w-2xl mx-auto mb-16 animate-up">
+      {/* ── Repository Input ── */}
+      <div className="max-w-2xl mx-auto mb-14 animate-up">
         <form onSubmit={handleSubmit} noValidate>
           <div className="card-brand">
-            <label htmlFor="repo-url" className="section-label block mb-2.5 text-brand-700">GitHub Repository URL</label>
+            <label htmlFor="repo-url" className="section-label block mb-2.5 text-brand-700">
+              GitHub Repository URL
+            </label>
             <div className="flex gap-3 flex-col sm:flex-row">
               <div className="flex-1 relative">
                 <IconGitHub className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
@@ -152,7 +165,7 @@ function HomeView({ onAnalyze }: { onAnalyze: (url: string) => void }) {
               </div>
               <button id="btn-analyze" type="submit" disabled={loading || !url.trim()} className="btn-primary shrink-0 justify-center">
                 {loading ? <IconSpinner /> : <IconSearch />}
-                {loading ? "Analyzing\u2026" : "Analyze Repository"}
+                {loading ? "Analyzing…" : "Analyze Repository"}
               </button>
             </div>
             {error && (
@@ -166,7 +179,7 @@ function HomeView({ onAnalyze }: { onAnalyze: (url: string) => void }) {
             <div className="flex flex-wrap gap-2 justify-center">
               {demoRepos.map((r) => (
                 <button key={r.url} type="button" onClick={() => { setUrl(r.url); setError(""); }}
-                  className="btn-secondary text-xs py-1.5 px-3.5 rounded-full" id={`demo-${r.label.replace("/","-")}`}>
+                  className="btn-secondary text-xs py-1.5 px-3.5 rounded-full" id={`demo-${r.label.replace("/", "-")}`}>
                   <IconGitHub className="w-3.5 h-3.5 text-gray-500" />{r.label}
                 </button>
               ))}
@@ -175,15 +188,17 @@ function HomeView({ onAnalyze }: { onAnalyze: (url: string) => void }) {
         </form>
       </div>
 
-      {/* Modern Bento Grid matching reference screenshot aesthetic */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 animate-up">
-        {/* Card 1: Repository Intelligence (Top Left) */}
+      {/* ── Bento Feature Grid (5 cards matching reference screenshot) ── */}
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5 animate-up">
+
+        {/* Card 1 — Repository Intelligence (top-left) */}
         <div className="card-hover p-5 flex flex-col justify-between">
           <div className="visual-panel min-h-[220px] mb-5">
             <div className="w-full flex flex-col gap-2">
+              {/* Floating metric pills */}
               <div className="floating-pill">
                 <div className="flex items-center gap-2">
-                  <span className="w-6 h-6 rounded-full bg-brand-100 flex items-center justify-center text-brand-600 text-[10px]">
+                  <span className="w-6 h-6 rounded-full bg-brand-100 flex items-center justify-center text-brand-600">
                     <IconCode className="w-3.5 h-3.5" />
                   </span>
                   <span>Codebase Mapping</span>
@@ -192,7 +207,7 @@ function HomeView({ onAnalyze }: { onAnalyze: (url: string) => void }) {
               </div>
               <div className="floating-pill">
                 <div className="flex items-center gap-2">
-                  <span className="w-6 h-6 rounded-full bg-purple-100 flex items-center justify-center text-purple-600 text-[10px]">
+                  <span className="w-6 h-6 rounded-full bg-purple-100 flex items-center justify-center text-purple-600">
                     <IconLayers className="w-3.5 h-3.5" />
                   </span>
                   <span>Framework Detection</span>
@@ -201,7 +216,7 @@ function HomeView({ onAnalyze }: { onAnalyze: (url: string) => void }) {
               </div>
               <div className="floating-pill">
                 <div className="flex items-center gap-2">
-                  <span className="w-6 h-6 rounded-full bg-indigo-100 flex items-center justify-center text-indigo-600 text-[10px]">
+                  <span className="w-6 h-6 rounded-full bg-indigo-100 flex items-center justify-center text-indigo-600">
                     <IconFolder className="w-3.5 h-3.5" />
                   </span>
                   <span>Test Suite Hierarchy</span>
@@ -222,20 +237,19 @@ function HomeView({ onAnalyze }: { onAnalyze: (url: string) => void }) {
           <div>
             <h3 className="text-base font-bold text-gray-900 mb-1.5">Repository Intelligence</h3>
             <p className="text-xs text-gray-500 leading-relaxed">
-              Deep codebase mapping analyzes languages, active frameworks, config files, test locations, and generates a verified AST snapshot.
+              Deep codebase mapping analyzes languages, frameworks, config files, test locations, and generates a verified AST snapshot.
             </p>
           </div>
         </div>
 
-        {/* Card 2: Beginner-Friendly Issue Discovery (Top Middle) */}
+        {/* Card 2 — Intelligent Issue Matching (top-middle) */}
         <div className="card-hover p-5 flex flex-col justify-between">
           <div className="visual-panel-purple min-h-[220px] mb-5">
             {/* Concentric rings */}
-            <div className="absolute w-44 h-44 rounded-full border border-purple-400/25 animate-pulse-slow" />
-            <div className="absolute w-32 h-32 rounded-full border border-purple-400/35" />
-            <div className="absolute w-20 h-20 rounded-full border border-purple-500/40" />
-
-            {/* Orbiting badges */}
+            <div className="absolute w-44 h-44 rounded-full border border-purple-400/20 animate-pulse-slow" />
+            <div className="absolute w-32 h-32 rounded-full border border-purple-400/30" />
+            <div className="absolute w-20 h-20 rounded-full border border-purple-500/35" />
+            {/* Orbital badge icons */}
             <div className="absolute top-4 left-6 w-8 h-8 rounded-full bg-white shadow-md flex items-center justify-center text-gray-700">
               <IconGitHub className="w-4 h-4" />
             </div>
@@ -248,45 +262,38 @@ function HomeView({ onAnalyze }: { onAnalyze: (url: string) => void }) {
             <div className="absolute bottom-4 right-7 w-8 h-8 rounded-full bg-white shadow-md flex items-center justify-center text-amber-500">
               <IconStar className="w-4 h-4" />
             </div>
-
-            {/* Center metallic AI dial */}
+            {/* Center AI dial */}
             <div className="ai-dial z-10 flex items-center justify-center text-white text-xs font-black tracking-wider">
               AI
             </div>
-
-            {/* Tooltip badge pointing to center with cursor */}
+            {/* Tooltip badge */}
             <div className="absolute bottom-7 z-20 flex items-center gap-1.5 bg-white px-3 py-1 rounded-full shadow-lg border border-purple-100 text-[11px] font-bold text-gray-800">
               <IconCursor className="w-3 h-3 text-purple-600" />
               <span>Smart Issue Match</span>
             </div>
           </div>
           <div>
-            <h3 className="text-base font-bold text-gray-900 mb-1.5">Beginner-Friendly Discovery</h3>
+            <h3 className="text-base font-bold text-gray-900 mb-1.5">Intelligent Issue Matching</h3>
             <p className="text-xs text-gray-500 leading-relaxed">
               Ranks issues by 7 explicit criteria — comment density, newcomer friendliness, recency, and complexity — pairing you with ideal tasks.
             </p>
           </div>
         </div>
 
-        {/* Card 3: Evidence-Backed Contribution Plans (Top Right) */}
+        {/* Card 3 — Contribution Plans (top-right) */}
         <div className="card-hover p-5 flex flex-col justify-between">
           <div className="visual-panel min-h-[220px] mb-5">
-            {/* Glossy purple sphere */}
+            {/* Glossy sphere decoration */}
             <div className="glossy-sphere w-8 h-8 absolute top-3 left-4" />
-
             <div className="w-full flex flex-col gap-2.5 z-10">
-              {/* Message 1 */}
+              {/* Chat-style plan preview */}
               <div className="bg-white/90 backdrop-blur-md rounded-2xl rounded-tl-sm p-3 text-[11px] text-gray-700 shadow-sm border border-white/80 max-w-[92%] leading-relaxed">
                 Found issue #142. Here is your evidence-backed 3-step PR roadmap:
               </div>
-
-              {/* Message 2 */}
               <div className="bg-gradient-to-r from-purple-600 to-indigo-600 text-white rounded-2xl rounded-tr-sm p-2.5 text-[11px] shadow-md max-w-[88%] self-end flex items-center gap-2">
                 <span className="leading-tight">Step 1: Check <code className="bg-white/20 px-1 rounded text-[10px]">app/main.py</code></span>
                 <span className="w-5 h-5 rounded-full bg-white/30 flex items-center justify-center text-[10px] font-bold shrink-0">✓</span>
               </div>
-
-              {/* Translucent preview dashes */}
               <div className="flex items-center gap-2 mt-1">
                 <div className="glossy-sphere w-4 h-4 shrink-0" />
                 <div className="flex-1 flex flex-col gap-1">
@@ -297,42 +304,30 @@ function HomeView({ onAnalyze }: { onAnalyze: (url: string) => void }) {
             </div>
           </div>
           <div>
-            <h3 className="text-base font-bold text-gray-900 mb-1.5">Evidence-Backed Plans</h3>
+            <h3 className="text-base font-bold text-gray-900 mb-1.5">Contribution Plans</h3>
             <p className="text-xs text-gray-500 leading-relaxed">
               Step-by-step implementation guides citing real file paths, AST checks, explicit assumptions, and suggested test suites.
             </p>
           </div>
         </div>
 
-        {/* Card 4: Setup Failure Doctor (Bottom Left) */}
+        {/* Card 4 — Setup Failure Doctor (bottom-left) */}
         <div className="card-hover p-5 flex flex-col justify-between">
           <div className="visual-panel-purple min-h-[200px] mb-5">
-            {/* Faint watermark background typography */}
+            {/* Watermark background text */}
             <div className="absolute inset-0 flex items-center justify-center opacity-10 select-none pointer-events-none text-[10px] font-mono leading-tight tracking-widest text-center px-4">
               DIAGNOSTIC &bull; DEPENDENCIES &bull; AST PARSER &bull; RESOLVER &bull; VERIFY &bull; STACK
             </div>
-
-            {/* Center node with circuit connection */}
+            {/* Node graph */}
             <div className="relative flex items-center justify-center">
               <div className="w-14 h-14 rounded-full bg-gradient-to-tr from-purple-700 to-indigo-600 text-white flex items-center justify-center font-bold text-xs shadow-lg z-10">
                 AI
               </div>
-
-              {/* Orbital nodes */}
-              <div className="absolute -left-12 w-7 h-7 rounded-full bg-white shadow-sm flex items-center justify-center text-xs font-mono font-bold text-indigo-600">
-                PY
-              </div>
-              <div className="absolute -right-12 w-7 h-7 rounded-full bg-white shadow-sm flex items-center justify-center text-xs font-mono font-bold text-purple-600">
-                JS
-              </div>
-              <div className="absolute -top-10 w-7 h-7 rounded-full bg-white shadow-sm flex items-center justify-center text-xs font-mono font-bold text-sky-600">
-                CI
-              </div>
-              <div className="absolute -bottom-10 w-7 h-7 rounded-full bg-white shadow-sm flex items-center justify-center text-xs font-mono font-bold text-emerald-600">
-                OK
-              </div>
+              <div className="absolute -left-12 w-7 h-7 rounded-full bg-white shadow-sm flex items-center justify-center text-xs font-mono font-bold text-indigo-600">PY</div>
+              <div className="absolute -right-12 w-7 h-7 rounded-full bg-white shadow-sm flex items-center justify-center text-xs font-mono font-bold text-purple-600">JS</div>
+              <div className="absolute -top-10 w-7 h-7 rounded-full bg-white shadow-sm flex items-center justify-center text-xs font-mono font-bold text-sky-600">CI</div>
+              <div className="absolute -bottom-10 w-7 h-7 rounded-full bg-white shadow-sm flex items-center justify-center text-xs font-mono font-bold text-emerald-600">OK</div>
             </div>
-
             <div className="mt-4 px-3 py-1 rounded-full bg-white/80 border border-purple-100 text-[10px] font-bold text-purple-800 shadow-sm">
               Zero Setup Failures
             </div>
@@ -345,29 +340,28 @@ function HomeView({ onAnalyze }: { onAnalyze: (url: string) => void }) {
           </div>
         </div>
 
-        {/* Card 5: Test Verification & Readiness (Bottom Right - Wide Bento Card spanning 2 cols) */}
-        <div className="card-hover p-5 md:col-span-2 lg:col-span-2 flex flex-col justify-between">
+        {/* Card 5 — Contribution Readiness (bottom-right, wide 2-col span) */}
+        <div className="card-hover p-5 md:col-span-1 lg:col-span-2 flex flex-col justify-between">
           <div
             onClick={() => inputRef.current?.focus()}
             className="visual-panel min-h-[200px] mb-5 w-full cursor-pointer group"
           >
-            {/* Ambient horizontal glow streaks */}
-            <div className="absolute inset-x-0 h-10 bg-gradient-to-r from-transparent via-purple-300/30 to-transparent blur-md pointer-events-none" />
-
-            {/* Sleek search / pill widget matching reference */}
-            <div className="w-full max-w-lg bg-white/85 backdrop-blur-md rounded-full px-5 py-3 shadow-[0_6px_20px_rgba(124,58,237,0.12)] border border-white flex items-center justify-between gap-4 group-hover:scale-[1.01] transition-transform">
+            {/* Ambient glow streak */}
+            <div className="absolute inset-x-0 h-10 bg-gradient-to-r from-transparent via-purple-300/25 to-transparent blur-md pointer-events-none" />
+            {/* Pill widget */}
+            <div className="repo-pill-widget group-hover:scale-[1.01]">
               <div className="flex items-center gap-3">
                 <IconGitHub className="w-4 h-4 text-purple-600 shrink-0" />
                 <span className="text-xs font-bold text-gray-700">AI Repository Inspector</span>
               </div>
-              <div className="px-4 py-1.5 rounded-full bg-gradient-to-r from-brand-500 to-lavender-600 text-white text-xs font-bold shadow-sm flex items-center gap-1.5">
+              <div className="px-4 py-1.5 rounded-full text-white text-xs font-bold flex items-center gap-1.5 shadow-sm"
+                style={{ background: "linear-gradient(135deg, #6366f1 0%, #7c3aed 100%)" }}>
                 <span>Analyze Repo</span>
                 <IconSparkle className="w-3 h-3" />
               </div>
             </div>
-
-            {/* Modern dashed dashboard telemetry indicators */}
-            <div className="flex gap-2 mt-4 opacity-70">
+            {/* Telemetry dash indicators */}
+            <div className="flex gap-2 mt-4 opacity-60">
               <div className="w-12 h-1.5 rounded-full bg-white/80" />
               <div className="w-16 h-1.5 rounded-full bg-white/60" />
               <div className="w-10 h-1.5 rounded-full bg-white/80" />
@@ -376,14 +370,21 @@ function HomeView({ onAnalyze }: { onAnalyze: (url: string) => void }) {
             </div>
           </div>
           <div>
-            <h3 className="text-base font-bold text-gray-900 mb-1.5">Test Verification &amp; Contribution Readiness</h3>
+            <h3 className="text-base font-bold text-gray-900 mb-1.5">Contribution Readiness</h3>
             <p className="text-xs text-gray-500 leading-relaxed">
               Our AI mentors map existing test suites, suggest targeted verification commands, and score your contribution readiness before you open your pull request.
             </p>
           </div>
         </div>
+
       </div>
     </main>
+  );
+}
+
+/* ─────────────────────────────────────────────────────────────────────
+   OverviewView
+───────────────────────────────────────────────────────────────────── */
 function OverviewView({ repo, loading, error, onGoIssues }: {
   repo: RepositoryOverview | null; loading: boolean; error: string | null; onGoIssues: () => void;
 }) {
@@ -393,6 +394,7 @@ function OverviewView({ repo, loading, error, onGoIssues }: {
   const langEntries = Object.entries(repo.detected_languages).sort((a, b) => b[1] - a[1]);
   return (
     <div className="max-w-5xl mx-auto px-4 sm:px-6 py-8 space-y-6 animate-in">
+
       {/* Repo Identity Card */}
       <div className="card-brand">
         <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-5">
@@ -550,6 +552,9 @@ function OverviewView({ repo, loading, error, onGoIssues }: {
   );
 }
 
+/* ─────────────────────────────────────────────────────────────────────
+   IssuesView
+───────────────────────────────────────────────────────────────────── */
 function IssuesView({ issues, loading, error, onSelectIssue, owner, repo }: {
   issues: MatchedIssue[]; loading: boolean; error: string | null;
   onSelectIssue: (issue: MatchedIssue) => void; owner: string; repo: string;
@@ -571,7 +576,7 @@ function IssuesView({ issues, loading, error, onSelectIssue, owner, repo }: {
         <div className="flex-1 relative">
           <IconSearch className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400 w-4 h-4" />
           <input id="issues-search" type="search" value={search} onChange={(e) => setSearch(e.target.value)}
-            placeholder="Search issues by title or label\u2026" className="input pl-11" />
+            placeholder="Search issues by title or label…" className="input pl-11" />
         </div>
         <select id="difficulty-filter" value={difficultyFilter} onChange={(e) => setDifficultyFilter(e.target.value)} className="input w-auto min-w-[170px]">
           <option value="all">All difficulties</option>
@@ -593,6 +598,9 @@ function IssuesView({ issues, loading, error, onSelectIssue, owner, repo }: {
   );
 }
 
+/* ─────────────────────────────────────────────────────────────────────
+   IssueCard
+───────────────────────────────────────────────────────────────────── */
 function IssueCard({ matched, onClick }: { matched: MatchedIssue; onClick: () => void }) {
   const { issue, total_score, difficulty, difficulty_explanation, criteria, prerequisites, risks } = matched;
   const [expanded, setExpanded] = useState(false);
@@ -629,7 +637,7 @@ function IssueCard({ matched, onClick }: { matched: MatchedIssue; onClick: () =>
       </div>
 
       <button onClick={() => setExpanded(!expanded)} className="mt-3.5 text-xs text-brand-600 hover:text-brand-800 transition-colors font-bold inline-flex items-center gap-1">
-        <span>{expanded ? "Hide criteria details \u2191" : "Show scoring criteria breakdown \u2193"}</span>
+        <span>{expanded ? "Hide criteria details ↑" : "Show scoring criteria breakdown ↓"}</span>
       </button>
 
       {expanded && (
@@ -656,7 +664,7 @@ function IssueCard({ matched, onClick }: { matched: MatchedIssue; onClick: () =>
             {criteria.map((c) => (
               <div key={c.name} className="flex items-start gap-2.5 text-xs bg-white/70 p-2 rounded-xl border border-gray-100">
                 <span className={`mt-0.5 shrink-0 font-bold ${c.passed ? "text-emerald-600" : "text-rose-500"}`}>
-                  {c.passed ? "\u2713" : "\u2717"}
+                  {c.passed ? "✓" : "✗"}
                 </span>
                 <div className="flex-1">
                   <span className="text-gray-700">{c.explanation}</span>
@@ -681,6 +689,9 @@ function IssueCard({ matched, onClick }: { matched: MatchedIssue; onClick: () =>
   );
 }
 
+/* ─────────────────────────────────────────────────────────────────────
+   PlanView
+───────────────────────────────────────────────────────────────────── */
 function PlanView({ plan, loading, error }: { plan: ContributionPlan | null; loading: boolean; error: string | null; }) {
   if (loading) return <LoadingSkeleton />;
   if (error) return <div className="max-w-5xl mx-auto px-4 sm:px-6 py-10"><ErrorState title="Could not generate plan" message={error} /></div>;
@@ -722,7 +733,7 @@ function PlanView({ plan, loading, error }: { plan: ContributionPlan | null; loa
         </div>
       )}
 
-      {/* Step by Step Implementation Roadmap */}
+      {/* Step-by-step roadmap */}
       <div className="card p-6 sm:p-8">
         <p className="section-label mb-5 text-purple-700">Implementation Steps</p>
         <ol className="space-y-6">
@@ -797,6 +808,9 @@ function PlanView({ plan, loading, error }: { plan: ContributionPlan | null; loa
   );
 }
 
+/* ─────────────────────────────────────────────────────────────────────
+   SettingsView
+───────────────────────────────────────────────────────────────────── */
 function SettingsView({ health, healthLoading }: { health: HealthResponse | null; healthLoading: boolean }) {
   return (
     <div className="max-w-3xl mx-auto px-4 sm:px-6 py-8 space-y-6 animate-in">
@@ -811,7 +825,7 @@ function SettingsView({ health, healthLoading }: { health: HealthResponse | null
         ) : health ? (
           <div className="space-y-0.5">
             {[
-              { label: "Status",      value: health.status === "ok" ? "\u2713 Operational" : "\u2717 Error" },
+              { label: "Status",      value: health.status === "ok" ? "✓ Operational" : "✗ Error" },
               { label: "Version",     value: health.version },
               { label: "Environment", value: health.environment },
               { label: "AI Provider", value: health.ai_provider },
@@ -840,9 +854,12 @@ function SettingsView({ health, healthLoading }: { health: HealthResponse | null
   );
 }
 
+/* ─────────────────────────────────────────────────────────────────────
+   LoadingSkeleton
+───────────────────────────────────────────────────────────────────── */
 function LoadingSkeleton() {
   return (
-    <div className="max-w-5xl mx-auto px-4 sm:px-6 py-8 space-y-5" aria-busy="true" aria-label="Loading\u2026">
+    <div className="max-w-5xl mx-auto px-4 sm:px-6 py-8 space-y-5" aria-busy="true" aria-label="Loading…">
       <div className="card p-8 space-y-4"><Skeleton className="w-1/3 h-7" /><Skeleton className="w-2/3 h-5" /><Skeleton className="w-1/2 h-4" /></div>
       <div className="grid sm:grid-cols-2 gap-5">
         <div className="card p-6 space-y-3">{[1,2,3,4].map((i) => <Skeleton key={i} className={`w-${["3/4","1/2","2/3","1/3"][i-1]} h-4`} />)}</div>
@@ -853,6 +870,9 @@ function LoadingSkeleton() {
   );
 }
 
+/* ─────────────────────────────────────────────────────────────────────
+   App (root)
+───────────────────────────────────────────────────────────────────── */
 export default function App() {
   const [view, setView]                   = useState<View>("home");
   const [repoOverview, setRepoOverview]   = useState<RepositoryOverview | null>(null);
@@ -877,7 +897,9 @@ export default function App() {
       const result = await api.analyzeRepository(url);
       setRepoOverview(result.repository); setIssues([]); setPlan(null);
     } catch (err) {
-      const msg = err instanceof APIError ? `${err.message}${err.detail ? ` \u2014 ${JSON.stringify(err.detail)}` : ""}` : "An unexpected error occurred. Is the backend running?";
+      const msg = err instanceof APIError
+        ? `${err.message}${err.detail ? ` — ${JSON.stringify(err.detail)}` : ""}`
+        : "An unexpected error occurred. Is the backend running?";
       setRepoError(msg); setView("overview");
     } finally { setRepoLoading(false); }
   }, []);
@@ -888,7 +910,14 @@ export default function App() {
     if (issues.length > 0) return;
     setIssuesLoading(true); setIssuesError(null);
     try {
-      const result = await api.matchIssues({ owner: repoOverview.identity.owner, repo: repoOverview.identity.repo, skills: [], preferred_languages: repoOverview.primary_language ? [repoOverview.primary_language] : [], experience_level: "beginner", learning_preferences: [] });
+      const result = await api.matchIssues({
+        owner: repoOverview.identity.owner,
+        repo:  repoOverview.identity.repo,
+        skills: [],
+        preferred_languages: repoOverview.primary_language ? [repoOverview.primary_language] : [],
+        experience_level: "beginner",
+        learning_preferences: [],
+      });
       setIssues(result.matched_issues);
     } catch (err) { setIssuesError(err instanceof APIError ? err.message : "Failed to load issues"); }
     finally { setIssuesLoading(false); }
@@ -897,8 +926,10 @@ export default function App() {
   const handleSelectIssue = useCallback(async (matched: MatchedIssue) => {
     if (!repoOverview) return;
     setView("plan"); setPlanLoading(true); setPlanError(null);
-    try { const result = await api.generatePlan(repoOverview.identity.owner, repoOverview.identity.repo, matched.issue.number); setPlan(result); }
-    catch (err) { setPlanError(err instanceof APIError ? err.message : "Failed to generate plan"); }
+    try {
+      const result = await api.generatePlan(repoOverview.identity.owner, repoOverview.identity.repo, matched.issue.number);
+      setPlan(result);
+    } catch (err) { setPlanError(err instanceof APIError ? err.message : "Failed to generate plan"); }
     finally { setPlanLoading(false); }
   }, [repoOverview]);
 
@@ -912,10 +943,11 @@ export default function App() {
         {view === "plan"     && <PlanView plan={plan} loading={planLoading} error={planError} />}
         {view === "settings" && <SettingsView health={health} healthLoading={healthLoading} />}
       </div>
-      <footer className="border-t border-gray-200/70 py-6 text-center">
-        <p className="text-xs text-gray-500 font-medium">FirstPatch AI &bull; Evidence-backed open-source mentorship &bull; v0.1.0</p>
+      <footer className="border-t border-gray-200/70 py-6 text-center bg-white/40 backdrop-blur-sm">
+        <p className="text-xs text-gray-500 font-medium">
+          FirstPatch AI &bull; Evidence-backed open-source mentorship &bull; v0.1.0
+        </p>
       </footer>
     </div>
   );
 }
-
