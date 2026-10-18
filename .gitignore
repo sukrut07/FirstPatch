@@ -1,0 +1,106 @@
+# =============================================================================
+# FirstPatch AI — .gitignore
+# =============================================================================
+
+# Environment files — NEVER commit credentials
+.env
+.env.local
+.env.*.local
+.env.production
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+pip-wheel-metadata/
+share/python-wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+MANIFEST
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+htmlcov/
+.coverage
+.coverage.*
+coverage.xml
+*.cover
+*.py,cover
+.hypothesis/
+.tox/
+.nox/
+.venv/
+venv/
+ENV/
+env/
+env.bak/
+venv.bak/
+
+# SQLite database files (runtime artifacts)
+*.db
+*.sqlite
+*.sqlite3
+
+# Node.js / Next.js
+node_modules/
+.next/
+out/
+build/
+.vercel/
+*.tsbuildinfo
+next-env.d.ts
+
+# Logs
+logs/
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+
+# Testing artifacts
+coverage/
+.nyc_output/
+
+# OS artifacts
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+desktop.ini
+
+# Editor artifacts
+.vscode/settings.json
+.idea/
+*.swp
+*.swo
+*~
+
+# Temporary files and large repository clones
+tmp/
+temp/
+*.tmp
+repo_clones/
+
+# AI / model artifacts
+*.gguf
+*.bin
+*.safetensors
