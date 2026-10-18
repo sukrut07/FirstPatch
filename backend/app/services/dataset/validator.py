@@ -29,7 +29,7 @@ logger = logging.getLogger(__name__)
 SECRET_PATTERNS: list[tuple[str, re.Pattern]] = [
     ("GitHub Personal Access Token (classic)", re.compile(r"\bghp_[A-Za-z0-9]{36}\b")),
     ("GitHub Fine-Grained PAT", re.compile(r"\bgithub_pat_[A-Za-z0-9_]{82}\b")),
-    ("Google AI Studio / Gemini API Key", re.compile(r"\bAIza[0-9A-Za-z\-_]{35}\b")),
+    ("Google AI Studio / Gemini API Key", re.compile(r"\bAIza[0-9A-Za-z\-_]{30,40}\b")),
     ("AWS Access Key", re.compile(r"\bAKIA[0-9A-Z]{16}\b")),
     ("RSA / EC Private Key", re.compile(r"-----BEGIN\s+(?:RSA\s+|EC\s+)?PRIVATE\s+KEY-----")),
     ("Generic Bearer Token", re.compile(r"(?i)\bbearer\s+[a-zA-Z0-9_\-\.]{25,}\b")),

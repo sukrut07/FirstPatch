@@ -133,3 +133,44 @@ Independent service providing genuine, sandboxed test verification:
 - **Accurate Output Parsing**: Pytest and Jest test output parsers extract actual test counts without fabrication.
 - **Bounded Resource Limits**: Max 50KB stdout/stderr bounding, 45-120s timeout enforcement, and unconditional disposable workspace cleanup.
 
+## Proof-Carrying Contributions & Contribution Trust Layer
+
+FirstPatch AI implements a deterministic trust boundary separating untrusted proposers (LLM / Gemma / heuristics) from deterministic verification:
+
+```text
+Repository Snapshot + Commit SHA
+              │
+              ▼
+      FACT STORE / INDEX
+              │
+              ▼
+       UNTRUSTED PROPOSER (Gemma / AI)
+              │
+       Structured Claims (no verdict fields)
+              │
+              ▼
+      DETERMINISTIC KERNEL
+              │
+      VERIFIED / REFUTED / STALE / UNKNOWN
+              │
+              ▼
+       TRUSTED RENDERER
+              │
+              ▼
+      RECEIPT / PR PACKAGE
+```
+
+### Core Trust Components
+1. **Fact Store (`app/services/trust/fact_store.py`)**: SQLite parameterized persistence keyed to repository and commit SHA. Enforces strict path normalization (`normalize_repo_path`) to eliminate path traversal, absolute drives, and null bytes.
+2. **Untrusted Claim Models (`app/services/trust/claims.py`)**: Proposers create `Claim` objects. Proposers have **no field** to self-certify an assertion as verified.
+3. **Deterministic Checker Kernel (`app/services/trust/kernel.py`, `checkers.py`)**: Dispatches claims against immutable facts. Enforces SHA matching (stale detection), catches exceptions, and emits signed `Verdict` objects.
+4. **Trusted Renderer (`app/services/trust/render.py`)**: Assembles verified plan steps from checked arguments while strictly isolating raw model prose in an `unverified explanation` section.
+5. **Contribution Policy Radar (`app/services/policy_radar/service.py`)**: Scans `CONTRIBUTING.*`, AI policy files, and PR templates. Flags AI bans, requires disclosures, and switches to Learn Mode when AI is prohibited.
+6. **Issue Claim & Duplicate-PR Guard (`app/services/claim_guard/service.py`)**: Detects assigned issues, linked open PRs, and comment claims to prevent duplicate contributor effort.
+7. **Contributor Understanding Gate (`app/services/understanding_gate/service.py`)**: Synthesizes 3 comprehension questions strictly from verified claims, evaluating answers deterministically without blocking users.
+8. **Tamper-Evident Contribution Receipt (`app/services/trust/receipt.py`)**: SHA-256 canonical hash-chained flight recorder tracking the contribution lifecycle with verification driver provenance.
+9. **Repository Review Memory (`app/services/trust/review_memory.py`)**: Analyzes sampled PR review comments for recurring maintainer expectations (tests, types, style), requiring $\ge 2$ independent comments to substantiate a theme.
+10. **Blast Radius & Impact Analysis (`app/services/trust/blast_radius.py`)**: Traces AST dependencies and test targets to produce qualitative risk notes.
+11. **Abstention Decision Engine (`app/services/trust/abstain.py`)**: Declines recommendations when evidence margin is statistically or structurally insufficient, reporting risk-coverage trade-offs.
+12. **Kernel Mutation Fuzzing (`app/services/trust/fuzz.py`)**: Evaluates kernel robustness against 12+ controlled claim mutations and receipt tamper attacks.
+

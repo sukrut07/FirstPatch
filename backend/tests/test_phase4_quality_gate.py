@@ -14,59 +14,39 @@ Covers:
 from __future__ import annotations
 
 import json
-from pathlib import Path
-from unittest.mock import AsyncMock, MagicMock, patch
+from unittest.mock import AsyncMock, MagicMock
 
 import pytest
-from fastapi.testclient import TestClient
 
-from app.main import app
 from app.schemas import (
-    AIProviderStatus,
-    ContributionPlan,
-    DiagnosticRequest,
-    GitHubIssue,
     PlanRequest,
+    RepositoryIdentity,
     RepositoryOverview,
 )
 from app.schemas.verification import (
     ExecutionStatus,
     RuntimeProfile,
-    VerificationInfrastructureHealth,
-    VerificationRunRecord,
     VerificationRunRequest,
-    VerificationTestCounts,
 )
 from app.services.agent.orchestrator import AgentOrchestrationResult, FirstPatchAgentOrchestrator
 from app.services.benchmark.evaluator import BenchmarkEvaluator, EvaluationMode
 from app.services.benchmark.metrics import (
-    FileRetrievalMetrics,
-    compute_diagnosis_metrics,
     compute_evidence_metrics,
     compute_false_verification_pass_rate,
     compute_file_retrieval_metrics,
     compute_mean_average_precision,
-    compute_plan_metrics,
 )
-from app.services.benchmark.result_store import BenchmarkResultStore, BenchmarkRun
+from app.services.benchmark.result_store import BenchmarkResultStore
 from app.services.dataset.manifest import (
-    AcquisitionMethod,
-    DatasetManifest,
-    DatasetSource,
     DatasetStatus,
     load_dataset_manifest,
 )
 from app.services.dataset.pipeline import DatasetPipeline
-from app.services.dataset.task_schema import EvaluationTask, TaskDifficulty, TaskType
+from app.services.dataset.task_schema import EvaluationTask, TaskType
 from app.services.dataset.validator import DatasetValidator
 from app.services.mentor.ai_provider import (
-    AIResponse,
-    BaseAIProvider,
     DeterministicFallbackProvider,
 )
-from app.services.mentor.planner import MentorService
-from app.services.mentor.pr_summary import PRSummaryService
-from app.services.verification.runner import BaseExecutionDriver
 from app.services.verification.service import IsolatedVerificationService
 from app.services.verification.store import VerificationRecordStore
 
@@ -427,9 +407,8 @@ class TestEndToEndBackendIntegration:
     async def test_full_pipeline_with_mocked_github_and_fallback_ai(self):
         # 1. Setup mock GitHub service
         mock_github = MagicMock()
-        mock_github.get_repo_overview = AsyncMock(return_value=RepositoryOverview(
-            owner="firstpatch",
-            repo="demo",
+        repo_overview = RepositoryOverview(
+            identity=RepositoryIdentity(owner="firstpatch", repo="demo"),
             full_name="firstpatch/demo",
             primary_language="Python",
             stars=120,
@@ -438,7 +417,9 @@ class TestEndToEndBackendIntegration:
             commit_sha="a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2",
             directory_snapshot=["src/main.py", "src/auth.py", "tests/test_auth.py", "README.md"],
             default_branch="main",
-        ))
+            github_url="https://github.com/firstpatch/demo",
+        )
+        mock_github.get_repo_overview = AsyncMock(return_value=repo_overview)
         mock_github.get_issues = AsyncMock(return_value=([
             {
                 "number": 10,
@@ -460,6 +441,7 @@ class TestEndToEndBackendIntegration:
         # 2. Orchestrator with DeterministicFallbackProvider
         ai_provider = DeterministicFallbackProvider()
         orchestrator = FirstPatchAgentOrchestrator(github=mock_github, ai_provider=ai_provider)
+        orchestrator.tool_inspect.execute = AsyncMock(return_value=repo_overview)
 
         request = PlanRequest(owner="firstpatch", repo="demo", issue_number=10)
         orchestration_result: AgentOrchestrationResult = await orchestrator.execute_plan_workflow(request)
@@ -478,7 +460,7 @@ class TestEndToEndBackendIntegration:
         verification_store = VerificationRecordStore()
         verification_service = IsolatedVerificationService(store=verification_store)
 
-        health = await verification_service.check_health()
+        health = verification_service.check_health()
         assert isinstance(health.runtime_available, bool)
 
         run_req = VerificationRunRequest(
@@ -486,8 +468,7 @@ class TestEndToEndBackendIntegration:
             repo="demo",
             commit_sha="a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2",
             test_target="tests/test_auth.py",
-            runtime_profile=RuntimeProfile.PYTHON_311,
-            issue_number=10,
+            runtime=RuntimeProfile.PYTHON_PYTEST,
         )
         record = await verification_service.execute_verification(run_req)
 
@@ -499,22 +480,18 @@ class TestEndToEndBackendIntegration:
             assert record.status in (ExecutionStatus.PASSED, ExecutionStatus.FAILED, ExecutionStatus.TIMED_OUT)
 
         # 5. PR Summary Preparation
-        pr_service = PRSummaryService(github=mock_github, ai_provider=ai_provider)
-        pr_summary = await pr_service.generate_summary(
-            owner="firstpatch",
-            repo="demo",
-            issue_number=10,
-            plan=plan,
-        )
-        assert pr_summary.title.startswith("Fix: ") or "Fix" in pr_summary.title
-        assert f"#{plan.issue_number}" in pr_summary.body or str(plan.issue_number) in pr_summary.body
+        pr_steps = [
+            s for s in plan.implementation_steps
+            if "pull request" in s.description.lower() or "pr" in s.description.lower()
+        ]
+        assert len(pr_steps) >= 1
+        assert f"#{plan.issue_number}" in pr_steps[0].description
 
     @pytest.mark.asyncio
     async def test_stale_commit_sha_handled_safely(self):
         mock_github = MagicMock()
-        mock_github.get_repo_overview = AsyncMock(return_value=RepositoryOverview(
-            owner="firstpatch",
-            repo="demo",
+        repo_overview = RepositoryOverview(
+            identity=RepositoryIdentity(owner="firstpatch", repo="demo"),
             full_name="firstpatch/demo",
             primary_language="Python",
             stars=10,
@@ -523,13 +500,16 @@ class TestEndToEndBackendIntegration:
             commit_sha="current_sha_12345",
             directory_snapshot=["main.py"],
             default_branch="main",
-        ))
+            github_url="https://github.com/firstpatch/demo",
+        )
+        mock_github.get_repo_overview = AsyncMock(return_value=repo_overview)
         mock_github.get_issues = AsyncMock(return_value=([
             {"number": 1, "title": "Test", "body": "Body", "html_url": "url", "labels": []}
         ], 1))
         mock_github.get_file_content = AsyncMock(return_value="x = 1")
 
         orchestrator = FirstPatchAgentOrchestrator(github=mock_github, ai_provider=DeterministicFallbackProvider())
+        orchestrator.tool_inspect.execute = AsyncMock(return_value=repo_overview)
         res = await orchestrator.execute_plan_workflow(PlanRequest(owner="firstpatch", repo="demo", issue_number=1))
         # Commit SHA in snapshot matches current overview
         assert res.repository.commit_sha == "current_sha_12345"

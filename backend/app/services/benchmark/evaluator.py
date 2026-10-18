@@ -25,7 +25,6 @@ from typing import Any, Optional
 
 from app.services.benchmark.metrics import (
     compute_diagnosis_metrics,
-    compute_evidence_metrics,
     compute_file_retrieval_metrics,
     compute_mean_average_precision,
     compute_plan_metrics,

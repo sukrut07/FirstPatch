@@ -29,7 +29,6 @@ from app.services.dataset.manifest import (
     DATASET_DIR,
     AcquisitionMethod,
     DatasetManifest,
-    DatasetSource,
     DatasetStatus,
 )
 from app.services.dataset.task_schema import (
