@@ -8,9 +8,12 @@ FirstPatch AI uses **Ollama** as its default local inference provider. This enab
 
 | Model Tag | Parameters | Disk Size | Best For | Recommended RAM |
 | :--- | :--- | :--- | :--- | :--- |
-| **`gemma2:2b`** | 2.6B | ~1.6 GB | Fast, responsive mentoring & explanations | $\ge 8$ GB RAM |
+| **`gemma4:e2b`** | ~2B (Efficient) | ~7.5 GB GGUF | Fast reasoning & guided mentorship on laptops | $\ge 8$ GB RAM |
+| **`gemma4:e4b`** | ~4B (Efficient) | ~9.5 GB GGUF | Balanced code comprehension & architectural analysis | $\ge 16$ GB RAM |
+| **`gemma4`** (Default) | Standard | ~9.5 GB | Full capability Gemma 4 model | $\ge 16$ GB RAM |
+| **`gemma4:26b` / `31b`**| 26B / 31B | > 18 GB | Deep multi-file reasoning & maintainer reviews | $\ge 32$ GB Unified Memory |
+| **`gemma2:2b`** | 2.6B | ~1.6 GB | Ultra-lightweight fallback for low-spec machines | $\ge 8$ GB RAM |
 | **`qwen2.5-coder:3b`** | 3.1B | ~1.9 GB | Code reasoning & structured diff generation | $\ge 8$ GB RAM |
-| **`qwen2.5-coder:7b`** | 7.6B | ~4.7 GB | Deep architectural analysis & complex PRs | $\ge 16$ GB RAM |
 | **`nomic-embed-text`** | 137M | ~274 MB | Semantic code chunk & issue embeddings | Any hardware |
 
 ---
@@ -26,15 +29,17 @@ brew install ollama
 ### 2. Start the Ollama Service
 Launch Ollama on your system. It listens on `http://127.0.0.1:11434`.
 
-### 3. Pull Required Models
+### 3. Pull Gemma 4 & Supporting Models
 ```bash
-# Pull primary mentor model
-ollama pull gemma2:2b
+# Pull primary Gemma 4 model (or specific parameter size)
+ollama pull gemma4:e2b
+# or: ollama pull gemma4
 
-# Pull embedding model
+# Pull embedding model for hybrid semantic search
 ollama pull nomic-embed-text
 
-# (Optional) Pull coder model
+# (Optional) Lightweight fallbacks
+ollama pull gemma2:2b
 ollama pull qwen2.5-coder:3b
 ```
 

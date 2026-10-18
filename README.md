@@ -73,25 +73,62 @@ Traditional developer tools either provide static issue lists (FirstIssue, Good 
 2. **Node.js 18+** & npm
 3. **Ollama** running locally on `http://127.0.0.1:11434`
 
-### Setup Local Models on Ollama
+### Setup Local Models on Ollama (Gemma 4 & Embeddings)
 
-Pull the recommended local models:
+FirstPatch AI supports local inference using Google's **Gemma 4** family via Ollama. Quantized GGUF models allow full repository reasoning on laptops without high-end GPUs.
+
+#### 1. Download & Configure Gemma 4 in Ollama
 
 ```bash
-# 1. Primary mentor model (lightweight, runs smoothly on laptops)
-ollama pull gemma2:2b
+# Pull the default Gemma 4 model
+ollama pull gemma4
 
-# 2. Embedding model for semantic code retrieval
+# Or select specific Gemma 4 parameter variants based on your hardware:
+# - E2B Parameters (Efficient 2B):
+ollama pull gemma4:e2b
+
+# - E4B Parameters (Efficient 4B):
+ollama pull gemma4:e4b
+
+# - 26B / 31B Parameters (High capacity):
+ollama pull gemma4:26b
+ollama pull gemma4:31b
+
+# Pull embedding model for semantic code retrieval
 ollama pull nomic-embed-text
 
-# 3. Optional coding model alternative
+# Optional lightweight alternatives:
+ollama pull gemma2:2b
 ollama pull qwen2.5-coder:3b
 ```
 
-Verify that Ollama is active:
+#### 2. Verify Available Models in Ollama
+
 ```bash
-curl http://127.0.0.1:11434/api/tags
+ollama list
 ```
+
+#### 3. Test Response Generation Directly
+
+**Command Line:**
+```bash
+ollama run gemma4 "Explain the role of pytest fixtures in open-source testing"
+```
+
+**Local Web Service API:**
+```bash
+curl http://localhost:11434/api/generate -d '{
+  "model": "gemma4:e2b",
+  "prompt": "How do I structure a good pull request?"
+}'
+```
+
+#### 4. Official Google Gemma & Hackathon Resources
+- [Google Gemma Ollama Integration Guide](https://ai.google.dev/gemma/docs/integrations/ollama)
+- [MLH Hack Days Gemma Hub](https://hack-days-gemma-mlh.pages.dev/)
+- [Gemma on Gemini API](https://ai.google.dev/gemma/docs/core/gemma_on_gemini_api)
+- [Official Google Gemma Cookbook](https://github.com/google-gemma/cookbook)
+- [MLH Gemma Documentation](https://mlh.link/gemma-docs)
 
 ---
 
