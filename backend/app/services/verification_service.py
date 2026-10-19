@@ -92,37 +92,27 @@ class VerificationService:
                     "duration_ms": 0
                 }
 
-        # On Windows, python3 is typically a Microsoft Store stub; alias to current python executable or python
-        if os.name == "nt" and command_str.startswith("python3"):
-            command_str = "python" + command_str[7:]
-
         # Build clean environment without sensitive host secrets
         safe_env = {
             "PATH": os.environ.get("PATH", "/usr/bin:/bin:/usr/local/bin"),
-            "HOME": os.environ.get("HOME", os.environ.get("USERPROFILE", "/tmp")),
+            "HOME": os.environ.get("HOME", "/tmp"),
             "LANG": "en_US.UTF-8",
             "PYTHONUNBUFFERED": "1"
         }
-        if os.name == "nt":
-            safe_env["SystemRoot"] = os.environ.get("SystemRoot", r"C:\Windows")
-            safe_env["COMSPEC"] = os.environ.get("COMSPEC", r"C:\Windows\System32\cmd.exe")
-            safe_env["PATHEXT"] = os.environ.get("PATHEXT", ".COM;.EXE;.BAT;.CMD")
 
         start_time = time.time()
         run_id = str(uuid.uuid4())
 
         try:
             # Execute with shlex split for safety
-            is_win = os.name == "nt"
-            args = shlex.split(command_str, posix=not is_win)
+            args = shlex.split(command_str)
             process = subprocess.run(
                 args,
                 cwd=cwd or None,
                 env=safe_env,
                 capture_output=True,
                 text=True,
-                timeout=timeout_seconds,
-                shell=is_win
+                timeout=timeout_seconds
             )
             duration_ms = int((time.time() - start_time) * 1000)
             status = "PASSED" if process.returncode == 0 else "FAILED"

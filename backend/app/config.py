@@ -1,7 +1,6 @@
 import os
 from pydantic_settings import BaseSettings, SettingsConfigDict
-from pydantic import field_validator
-from typing import Optional, List, Union, Any
+from typing import Optional, List
 
 class Settings(BaseSettings):
     model_config = SettingsConfigDict(env_file=".env", extra="ignore")
@@ -36,30 +35,19 @@ class Settings(BaseSettings):
     DO_GRADIENT_WORKSPACE_ID: Optional[str] = None
     AI_INFERENCE_PROVIDER: str = "ollama"  # 'ollama' or 'digitalocean_gradient'
     
+    # Gemma 4 Cloud & Google AI Studio Configuration
+    GEMMA_API_KEY: Optional[str] = None
+    GOOGLE_AI_API_KEY: Optional[str] = None
+    GEMMA_MODEL: str = "gemma-4-31b-it"
+    GEMMA_PROVIDER: str = "google_ai_studio"
+    
     # CORS
-    CORS_ORIGINS: Union[str, List[str]] = [
+    CORS_ORIGINS: List[str] = [
         "http://localhost:3000",
         "http://127.0.0.1:3000",
         "http://localhost:3001",
         "http://127.0.0.1:3001",
-        "http://localhost:8000",
-        "http://127.0.0.1:8000",
+        "*"
     ]
-
-    @field_validator("CORS_ORIGINS", mode="before")
-    @classmethod
-    def parse_cors_origins(cls, v: Any) -> List[str]:
-        if isinstance(v, str):
-            v_stripped = v.strip()
-            if v_stripped.startswith("[") and v_stripped.endswith("]"):
-                import json
-                try:
-                    return json.loads(v_stripped)
-                except Exception:
-                    pass
-            return [origin.strip() for origin in v_stripped.split(",") if origin.strip()]
-        elif isinstance(v, list):
-            return v
-        return ["http://localhost:3000", "http://127.0.0.1:3000"]
 
 settings = Settings()

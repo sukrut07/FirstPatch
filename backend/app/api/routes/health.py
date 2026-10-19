@@ -9,7 +9,6 @@ router = APIRouter(tags=["health"])
 
 
 @router.get("/health", response_model=HealthResponse)
-@router.get("/api/health", response_model=HealthResponse)
 async def health() -> HealthResponse:
     """Service health check. Returns version and provider status without exposing secrets."""
     settings = get_settings()

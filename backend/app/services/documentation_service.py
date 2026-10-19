@@ -25,17 +25,7 @@ class DocumentationService:
             cursor.execute("SELECT * FROM repositories WHERE id = ?", (repository_id,))
             repo = cursor.fetchone()
             if not repo:
-                parts = repository_id.split("/")
-                owner = parts[0] if len(parts) > 1 else "octocat"
-                name = parts[1] if len(parts) > 1 else repository_id
-                now = get_iso_now()
-                cursor.execute(
-                    "INSERT OR REPLACE INTO repositories (id, owner, name, full_name, default_branch, created_at, updated_at) VALUES (?, ?, ?, ?, 'main', ?, ?)",
-                    (repository_id, owner, name, repository_id, now, now)
-                )
-                conn.commit()
-                cursor.execute("SELECT * FROM repositories WHERE id = ?", (repository_id,))
-                repo = cursor.fetchone()
+                raise ValueError(f"Repository {repository_id} not found in database.")
 
             cursor.execute("SELECT * FROM repository_files WHERE repository_id = ?", (repository_id,))
             files = [dict(f) for f in cursor.fetchall()]

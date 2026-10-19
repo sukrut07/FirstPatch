@@ -131,14 +131,6 @@ class RepositoryAnalysisService:
                 analysis_status=AnalysisStatus.FAILED,
                 analysis_warnings=[str(exc)],
             )
-        except Exception as exc:
-            return RepositoryOverview(
-                identity=RepositoryIdentity(owner=owner, repo=repo),
-                full_name=f"{owner}/{repo}",
-                github_url=f"https://github.com/{owner}/{repo}",
-                analysis_status=AnalysisStatus.FAILED,
-                analysis_warnings=[f"Network error communicating with GitHub: {exc}"],
-            )
 
         meta_evidence = EvidenceRef(
             owner=owner,
