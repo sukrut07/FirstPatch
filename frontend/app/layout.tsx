@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { Outfit } from "next/font/google";
 import "./globals.css";
+import Navbar from "@/components/Navbar";
 
 const outfit = Outfit({
   subsets: ["latin"],
@@ -28,8 +29,16 @@ export default function RootLayout({
 }) {
   return (
     <html lang="en" className={outfit.variable}>
-      <body className="min-h-screen font-sans antialiased" style={{ background: "#eef0f7" }}>
-        {children}
+      <body className="min-h-screen font-sans antialiased flex flex-col" style={{ background: "#eef0f7" }}>
+        <Navbar />
+        <div className="flex-1">
+          {children}
+        </div>
+        <footer className="border-t border-gray-200/70 py-6 text-center bg-white/40 backdrop-blur-sm mt-12">
+          <p className="text-xs text-gray-500 font-medium">
+            FirstPatch AI &bull; Evidence-backed open-source mentorship &bull; v0.1.0
+          </p>
+        </footer>
       </body>
     </html>
   );
