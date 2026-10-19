@@ -11,7 +11,7 @@ from enum import Enum
 from typing import Any, Optional
 from uuid import UUID, uuid4
 
-from pydantic import BaseModel, ConfigDict, Field, HttpUrl, field_validator
+from pydantic import BaseModel, ConfigDict, Field, HttpUrl, field_validator, model_validator
 
 
 # ---------------------------------------------------------------------------
@@ -172,15 +172,24 @@ class RepositoryOverview(BaseModel):
 
 
 class AnalyzeRepositoryRequest(BaseModel):
-    url: str = Field(..., description="Public GitHub repository URL")
+    url: Optional[str] = Field(None, description="Public GitHub repository URL")
+    github_url: Optional[str] = Field(None, description="Alternative field for GitHub URL")
+
+    @model_validator(mode="before")
+    @classmethod
+    def resolve_url(cls, data: Any) -> Any:
+        if isinstance(data, dict):
+            if not data.get("url") and data.get("github_url"):
+                data["url"] = data["github_url"]
+        return data
 
     @field_validator("url")
     @classmethod
-    def validate_github_url(cls, v: str) -> str:
-        v = v.strip()
-        if not v:
+    def validate_github_url(cls, v: Optional[str]) -> str:
+        if not v or not v.strip():
             raise ValueError("URL must not be empty")
-        if "github.com" not in v:
+        v = v.strip()
+        if "github.com" not in v and "/" not in v:
             raise ValueError("Only GitHub repositories are supported at this time")
         return v
 

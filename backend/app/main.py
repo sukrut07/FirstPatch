@@ -40,21 +40,33 @@ app = FastAPI(
     lifespan=lifespan
 )
 
+from app.api.routes import health as api_health
+from app.api.routes import repositories as api_repositories
+from app.api.routes import issues as api_issues
+from app.api.routes import mentor as api_mentor
+
 # CORS Middleware
 app.add_middleware(
     CORSMiddleware,
     allow_origins=settings.CORS_ORIGINS,
+    allow_origin_regex=r"https?://(localhost|127\.0\.0\.1)(:\d+)?",
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
 )
 
-# Core Routers
-app.include_router(health.router)
+# Core Frontend-Compatible Routers
+app.include_router(api_health.router)
+app.include_router(api_repositories.router, prefix="/api/repositories")
+app.include_router(api_issues.router, prefix="/api/issues")
+app.include_router(api_mentor.router, prefix="/api/mentor")
+
+# Extended Feature Routers
 app.include_router(repositories.router)
 app.include_router(issues.router)
-app.include_router(retrieval.router)
 app.include_router(mentor.router)
+app.include_router(health.router)
+app.include_router(retrieval.router)
 app.include_router(contributions.router)
 app.include_router(verification.router)
 app.include_router(review.router)
