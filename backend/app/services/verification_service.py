@@ -99,6 +99,10 @@ class VerificationService:
             "LANG": "en_US.UTF-8",
             "PYTHONUNBUFFERED": "1"
         }
+        if os.name == "nt":
+            safe_env["SystemRoot"] = os.environ.get("SystemRoot", r"C:\Windows")
+            safe_env["COMSPEC"] = os.environ.get("COMSPEC", r"C:\Windows\System32\cmd.exe")
+            safe_env["PATHEXT"] = os.environ.get("PATHEXT", ".COM;.EXE;.BAT;.CMD")
 
         start_time = time.time()
         run_id = str(uuid.uuid4())
@@ -106,6 +110,13 @@ class VerificationService:
         try:
             # Execute with shlex split for safety
             args = shlex.split(command_str)
+            if os.name == "nt":
+                import sys
+                if args and args[0].lower() in ("python3", "python3.exe"):
+                    args[0] = sys.executable
+                if args and args[0].lower() in ("echo", "dir", "type", "cls", "copy", "del", "mkdir", "rmdir"):
+                    args = ["cmd.exe", "/c"] + args
+
             process = subprocess.run(
                 args,
                 cwd=cwd or None,

@@ -4,6 +4,7 @@ from typing import Dict, Any, List, Optional
 from backend.app.services.ollama_service import ollama_service
 from backend.app.services.cloud_llm_service import cloud_llm_service
 from backend.app.services.retrieval_service import retrieval_service
+from backend.app.config import settings
 from backend.app.database import get_db, get_iso_now
 
 class MentorService:
