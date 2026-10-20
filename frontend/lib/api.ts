@@ -6,19 +6,19 @@
  * - Local standalone development: defaults to "http://127.0.0.1:8000"
  */
 export function getApiBaseUrl(): string {
-  // 1. Next.js server-side runtime functions (reads Vercel service binding)
-  if (typeof window === "undefined" && process.env.BACKEND_URL) {
+  // 1. Client-side browser: always use relative path "" so Next.js rewrites proxy cleanly without CORS
+  if (typeof window !== "undefined") {
+    return "";
+  }
+
+  // 2. Next.js server-side runtime functions (reads Vercel service binding)
+  if (process.env.BACKEND_URL) {
     return process.env.BACKEND_URL.replace(/\/$/, "");
   }
 
-  // 2. Explicit public API URL if configured
+  // 3. Explicit public API URL if configured
   if (process.env.NEXT_PUBLIC_API_URL) {
     return process.env.NEXT_PUBLIC_API_URL.replace(/\/$/, "");
-  }
-
-  // 3. Client-side browser in unified deployment (Vercel rewrites /api/(.*) -> backend)
-  if (typeof window !== "undefined") {
-    return "";
   }
 
   // 4. Default fallback for local standalone execution
