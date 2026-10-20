@@ -31,7 +31,9 @@ export default function HomePage() {
 
   useEffect(() => {
     listRepositories().then((res) => {
-      if (Array.isArray(res)) setRecentRepos(res);
+      if (Array.isArray(res)) {
+        setRecentRepos(res.filter((r: any) => !r.id?.startsWith("test/") && r.name !== "repo"));
+      }
     });
     fetchHealth().then(setHealth);
   }, []);
