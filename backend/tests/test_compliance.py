@@ -11,6 +11,19 @@ from backend.app.database import init_db, get_db
 @pytest.fixture(autouse=True)
 def setup_test_db():
     init_db()
+    with get_db() as conn:
+        cursor = conn.cursor()
+        cursor.execute("SELECT id FROM repositories WHERE id='octocat/Hello-World'")
+        if not cursor.fetchone():
+            cursor.execute("""
+            INSERT OR REPLACE INTO repositories (
+                id, owner, name, description, default_branch, stars, forks, open_issues_count, language, topics, license_name, html_url, created_at
+            ) VALUES ('octocat/Hello-World', 'octocat', 'Hello-World', 'My first repo!', 'master', 1500, 1000, 5, 'Python', '["demo"]', 'MIT', 'https://github.com/octocat/Hello-World', datetime('now'))
+            """)
+            cursor.execute("""
+            INSERT OR REPLACE INTO repository_files (id, repository_id, path, file_type, content, created_at)
+            VALUES ('octocat-readme', 'octocat/Hello-World', 'README.md', 'markdown', '# Hello World\nDemo project.', datetime('now'))
+            """)
 
 # Problem 1: Difficulty Understanding Large Codebases
 def test_p1_codebase_understanding_ast_and_docs():

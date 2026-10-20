@@ -10,7 +10,7 @@ git clone https://github.com/YOUR_USERNAME/Hello-World.git
 cd Hello-World
 
 # 3. Add the official upstream remote:
-git remote add upstream None.git
+git remote add upstream https://github.com/octocat/Hello-World.git
 ```
 
 ## Step 2: Create a Working Branch
