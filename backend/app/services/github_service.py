@@ -38,7 +38,7 @@ class GitHubService:
 
     async def get_repo_metadata(self, owner: str, repo: str) -> Dict[str, Any]:
         url = f"{self.base_url}/repos/{owner}/{repo}"
-        async with httpx.AsyncClient(timeout=15.0) as client:
+        async with httpx.AsyncClient(timeout=15.0, follow_redirects=True) as client:
             resp = await client.get(url, headers=self._get_headers())
             if resp.status_code == 404:
                 raise ValueError(f"Repository '{owner}/{repo}' not found on GitHub. Please check if the repository is public and spelled correctly.")
@@ -64,7 +64,7 @@ class GitHubService:
 
     async def get_latest_commit_sha(self, owner: str, repo: str, branch: str) -> str:
         url = f"{self.base_url}/repos/{owner}/{repo}/commits/{branch}"
-        async with httpx.AsyncClient(timeout=15.0) as client:
+        async with httpx.AsyncClient(timeout=15.0, follow_redirects=True) as client:
             resp = await client.get(url, headers=self._get_headers())
             if resp.status_code == 200:
                 data = resp.json()
@@ -73,7 +73,7 @@ class GitHubService:
 
     async def get_file_tree(self, owner: str, repo: str, sha: str) -> List[Dict[str, Any]]:
         url = f"{self.base_url}/repos/{owner}/{repo}/git/trees/{sha}?recursive=1"
-        async with httpx.AsyncClient(timeout=20.0) as client:
+        async with httpx.AsyncClient(timeout=20.0, follow_redirects=True) as client:
             resp = await client.get(url, headers=self._get_headers())
             if resp.status_code == 200:
                 data = resp.json()
@@ -99,7 +99,7 @@ class GitHubService:
 
     async def get_raw_file_content(self, owner: str, repo: str, path: str, branch: str = "main") -> str:
         url = f"https://raw.githubusercontent.com/{owner}/{repo}/{branch}/{path}"
-        async with httpx.AsyncClient(timeout=15.0) as client:
+        async with httpx.AsyncClient(timeout=15.0, follow_redirects=True) as client:
             resp = await client.get(url)
             if resp.status_code == 200:
                 return resp.text
@@ -115,7 +115,7 @@ class GitHubService:
 
     async def get_open_issues(self, owner: str, repo: str, limit: int = 30) -> List[Dict[str, Any]]:
         url = f"{self.base_url}/repos/{owner}/{repo}/issues?state=open&per_page={limit}"
-        async with httpx.AsyncClient(timeout=15.0) as client:
+        async with httpx.AsyncClient(timeout=15.0, follow_redirects=True) as client:
             resp = await client.get(url, headers=self._get_headers())
             if resp.status_code != 200:
                 return []
