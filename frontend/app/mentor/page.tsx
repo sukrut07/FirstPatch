@@ -5,14 +5,7 @@ import { askMentor, listRepositories } from "@/lib/api";
 import {
   Sparkles,
   Send,
-  HelpCircle,
-  Code,
-  CheckCircle2,
-  AlertCircle,
-  FileCode,
-  Layers,
   ChevronRight,
-  BookOpen,
 } from "lucide-react";
 
 interface Message {

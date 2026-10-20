@@ -4,14 +4,9 @@ import { useEffect, useState } from "react";
 import { fetchModelStatus, testModelInference, testCloudApiKey, updateActiveModel } from "@/lib/api";
 import {
   Cpu,
-  CheckCircle2,
-  AlertCircle,
   Key,
-  Sparkles,
   RefreshCw,
-  ShieldCheck,
   Zap,
-  Save,
   Check,
 } from "lucide-react";
 
@@ -71,7 +66,7 @@ export default function ModelsSettingsPage() {
     setTestingKey(true);
     setKeyResult(null);
     try {
-      const res = await testCloudApiKey(apiKey.trim(), selectedProvider, selectedModel);
+      await testCloudApiKey(apiKey.trim(), selectedProvider, selectedModel);
       setKeyResult({ status: "success", detail: "API Key verified successfully!" });
       if (typeof window !== "undefined") {
         localStorage.setItem("firstpatch_api_key", apiKey.trim());
@@ -84,6 +79,25 @@ export default function ModelsSettingsPage() {
       setKeyResult({ status: "error", detail: err.message || "Failed to verify API Key." });
     } finally {
       setTestingKey(false);
+    }
+  };
+
+  const [switchingModel, setSwitchingModel] = useState(false);
+  const [switchSuccess, setSwitchSuccess] = useState(false);
+
+  const handleUpdateActiveModel = async (modelName: string) => {
+    setSwitchingModel(true);
+    try {
+      const res = await updateActiveModel(modelName);
+      if (res?.active_model) {
+        setModelStatus((prev: any) => ({ ...prev, active_model: res.active_model }));
+      }
+      setSwitchSuccess(true);
+      setTimeout(() => setSwitchSuccess(false), 2000);
+    } catch (e: any) {
+      alert("Failed to update active model: " + e.message);
+    } finally {
+      setSwitchingModel(false);
     }
   };
 
@@ -127,6 +141,30 @@ export default function ModelsSettingsPage() {
           </p>
           <div className="text-[11px] font-mono text-gray-500">
             Model: {modelStatus?.active_model || "Not Connected"}
+          </div>
+          <div className="pt-2 border-t border-gray-100 space-y-1.5">
+            <span className="text-[10px] font-bold text-gray-400 block uppercase">Switch Model:</span>
+            <div className="flex flex-wrap gap-1">
+              {["gemma4:e2b", "gemma2:2b", "qwen2.5-coder:3b"].map((m) => (
+                <button
+                  key={m}
+                  onClick={() => handleUpdateActiveModel(m)}
+                  disabled={switchingModel}
+                  className={`text-[10px] font-mono px-2 py-0.5 rounded-lg border transition-all ${
+                    modelStatus?.active_model === m
+                      ? "bg-brand-50 border-brand-300 text-brand-700 font-bold"
+                      : "bg-surface-50 border-gray-200 text-gray-600 hover:border-brand-200"
+                  }`}
+                >
+                  {m}
+                </button>
+              ))}
+            </div>
+            {switchSuccess && (
+              <span className="text-[10px] text-emerald-600 font-bold block animate-in">
+                ✓ Active model updated
+              </span>
+            )}
           </div>
         </div>
 

@@ -4,13 +4,6 @@ import { useEffect, useState } from "react";
 import { getComplianceReport } from "@/lib/api";
 import {
   ShieldCheck,
-  CheckCircle2,
-  AlertCircle,
-  Clock,
-  Sparkles,
-  BarChart3,
-  Layers,
-  ArrowRight,
   RefreshCw,
   Terminal,
 } from "lucide-react";

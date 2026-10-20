@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, useCallback } from "react";
 import Link from "next/link";
 import {
   getContribution,
@@ -10,20 +10,12 @@ import {
   getContributionReport,
 } from "@/lib/api";
 import {
-  GitPullRequest,
-  CheckCircle2,
-  Clock,
-  Play,
   Terminal,
   ShieldCheck,
-  FileCode,
   Download,
   Copy,
   Check,
-  ArrowRight,
   AlertCircle,
-  Sparkles,
-  Layers,
 } from "lucide-react";
 
 export default function ContributionWorkspacePage({
@@ -53,11 +45,7 @@ export default function ContributionWorkspacePage({
   const [report, setReport] = useState<any>(null);
   const [copiedDraft, setCopiedDraft] = useState(false);
 
-  useEffect(() => {
-    loadWorkspace();
-  }, [contributionId]);
-
-  const loadWorkspace = async () => {
+  const loadWorkspace = useCallback(async () => {
     setLoading(true);
     try {
       const data = await getContribution(contributionId);
@@ -67,7 +55,11 @@ export default function ContributionWorkspacePage({
     } finally {
       setLoading(false);
     }
-  };
+  }, [contributionId]);
+
+  useEffect(() => {
+    loadWorkspace();
+  }, [loadWorkspace]);
 
   const handleToggleStep = async (step: any) => {
     const nextStatus = step.status === "completed" ? "todo" : "completed";
@@ -255,10 +247,23 @@ export default function ContributionWorkspacePage({
           {/* Exported Report Display */}
           {report && (
             <div className="card p-6 space-y-3 animate-in">
-              <h3 className="text-sm font-bold text-gray-900 flex items-center gap-2">
-                <ShieldCheck className="w-4 h-4 text-emerald-600" />
-                Flight Recorder Audit Report
-              </h3>
+              <div className="flex items-center justify-between">
+                <h3 className="text-sm font-bold text-gray-900 flex items-center gap-2">
+                  <ShieldCheck className="w-4 h-4 text-emerald-600" />
+                  Flight Recorder Audit Report
+                </h3>
+                <button
+                  onClick={() => {
+                    navigator.clipboard.writeText(JSON.stringify(report, null, 2));
+                    setCopiedDraft(true);
+                    setTimeout(() => setCopiedDraft(false), 2000);
+                  }}
+                  className="btn-secondary text-[11px] py-1 px-2.5 rounded-lg inline-flex items-center gap-1 font-semibold"
+                >
+                  {copiedDraft ? <Check className="w-3 h-3 text-emerald-600" /> : <Copy className="w-3 h-3" />}
+                  {copiedDraft ? "Copied" : "Copy JSON"}
+                </button>
+              </div>
               <pre className="p-3 rounded-xl bg-surface-100 text-[11px] font-mono text-gray-800 overflow-x-auto max-h-60 border border-gray-200">
                 {JSON.stringify(report, null, 2)}
               </pre>

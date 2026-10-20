@@ -5,15 +5,7 @@ import { getBeginnerGlossary, getContributionSequence } from "@/lib/api";
 import {
   BookOpen,
   Search,
-  CheckCircle2,
-  AlertCircle,
-  HelpCircle,
-  Sparkles,
-  GitPullRequest,
   ShieldCheck,
-  Terminal,
-  ArrowRight,
-  Layers,
 } from "lucide-react";
 
 export default function LearnPage() {
@@ -188,6 +180,23 @@ export default function LearnPage() {
               className="input pl-10 py-2 text-xs"
             />
           </div>
+        </div>
+
+        {/* Category Filter Pills */}
+        <div className="flex flex-wrap items-center gap-2">
+          {["All", "Architecture", "Community", "Verification", "Audit"].map((cat) => (
+            <button
+              key={cat}
+              onClick={() => setActiveCategory(cat)}
+              className={`px-3 py-1 rounded-full text-xs font-semibold transition-all ${
+                activeCategory === cat
+                  ? "bg-brand-600 text-white shadow-sm"
+                  : "bg-white text-gray-600 border border-gray-200 hover:border-brand-300"
+              }`}
+            >
+              {cat}
+            </button>
+          ))}
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">

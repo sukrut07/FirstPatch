@@ -8,13 +8,9 @@ import {
   Compass,
   Search,
   Star,
-  GitFork,
   ArrowRight,
   Filter,
-  CheckCircle2,
   Sparkles,
-  Layers,
-  FileCode,
 } from "lucide-react";
 
 interface CuratedRepo {

@@ -9,7 +9,6 @@ import {
   Server,
   Terminal,
   AlertTriangle,
-  Trash2,
   Check,
 } from "lucide-react";
 
@@ -95,7 +94,7 @@ export default function PrivacySettingsPage() {
       {/* Local Storage & Database Management */}
       <div className="card p-6 sm:p-8 space-y-4 border-rose-100">
         <div className="flex items-center gap-2 text-rose-600">
-          <Trash2 className="w-4 h-4" />
+          <AlertTriangle className="w-4 h-4" />
           <h3 className="text-sm font-bold text-gray-900">Reset Local Database</h3>
         </div>
         <p className="text-xs text-gray-500 leading-relaxed max-w-2xl">

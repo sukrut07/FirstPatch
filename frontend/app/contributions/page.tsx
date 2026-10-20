@@ -5,14 +5,8 @@ import Link from "next/link";
 import { listContributions } from "@/lib/api";
 import {
   GitPullRequest,
-  CheckCircle2,
-  Clock,
   ArrowRight,
-  Folder,
-  Plus,
   Compass,
-  FileCode,
-  ShieldCheck,
 } from "lucide-react";
 
 export default function ContributionsListPage() {

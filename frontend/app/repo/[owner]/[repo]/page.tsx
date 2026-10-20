@@ -1,7 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
-import { useRouter } from "next/navigation";
+import { useEffect, useState, useCallback } from "react";
 import Link from "next/link";
 import {
   getRepository,
@@ -10,8 +9,6 @@ import {
   getRepositoryArchitecture,
   discoverIssues,
   askMentor,
-  planContribution,
-  createContribution,
   diagnoseSetupError,
   getRepositoryDocumentation,
   generateRepositoryDocumentation,
@@ -31,15 +28,10 @@ import {
   CheckCircle2,
   ArrowRight,
   ExternalLink,
-  Code,
-  AlertTriangle,
   AlertCircle,
   Copy,
   Check,
-  ShieldCheck,
-  Download,
   Bookmark,
-  ChevronRight,
   Send,
 } from "lucide-react";
 import CodebaseDiagrams from "@/components/CodebaseDiagrams";
@@ -51,7 +43,6 @@ export default function RepoWorkspacePage({
 }) {
   const { owner, repo } = params;
   const repoId = `${owner}/${repo}`;
-  const router = useRouter();
 
   const [activeTab, setActiveTab] = useState<"overview" | "architecture" | "files" | "issues" | "doctor" | "mentor" | "docs">("overview");
   const [repoData, setRepoData] = useState<any>(null);
@@ -82,12 +73,11 @@ export default function RepoWorkspacePage({
   const [mentorMode, setMentorMode] = useState<"learn" | "copilot">("learn");
   const [chatMessages, setChatMessages] = useState<any[]>([]);
   const [asking, setAsking] = useState(false);
+  const [reanalyzing, setReanalyzing] = useState(false);
+  const [reanalyzeMsg, setReanalyzeMsg] = useState<{ text: string; success: boolean } | null>(null);
+  const [refreshingIssues, setRefreshingIssues] = useState(false);
 
-  useEffect(() => {
-    loadAllData();
-  }, [owner, repo]);
-
-  const loadAllData = async () => {
+  const loadAllData = useCallback(async () => {
     setLoading(true);
     setError(null);
     try {
@@ -116,6 +106,45 @@ export default function RepoWorkspacePage({
       setError(err.message || "Failed to load repository data.");
     } finally {
       setLoading(false);
+    }
+  }, [owner, repo, repoId]);
+
+  useEffect(() => {
+    loadAllData();
+  }, [loadAllData]);
+
+  const handleReanalyze = async () => {
+    setReanalyzing(true);
+    setReanalyzeMsg(null);
+    try {
+      const res = await reanalyzeRepositoryWithGemma(owner, repo);
+      if (res?.ai_analysis) {
+        setRepoData((prev: any) => ({
+          ...prev,
+          ai_analysis: res.ai_analysis,
+        }));
+        setReanalyzeMsg({ text: "AI architecture analysis updated successfully with Gemma 4!", success: true });
+      } else {
+        setReanalyzeMsg({ text: "Re-analysis completed.", success: true });
+      }
+    } catch (e: any) {
+      setReanalyzeMsg({ text: "AI Re-analysis failed: " + (e.message || "Unknown error"), success: false });
+    } finally {
+      setReanalyzing(false);
+    }
+  };
+
+  const handleRefreshIssues = async () => {
+    setRefreshingIssues(true);
+    try {
+      const iss = await discoverIssues(repoId);
+      if (Array.isArray(iss)) {
+        setIssues(iss);
+      }
+    } catch (e: any) {
+      console.error("Failed to refresh issues:", e);
+    } finally {
+      setRefreshingIssues(false);
     }
   };
 
@@ -269,6 +298,16 @@ export default function RepoWorkspacePage({
             </a>
           )}
           <button
+            onClick={handleReanalyze}
+            disabled={reanalyzing}
+            id="repo-btn-reanalyze"
+            className="btn-secondary text-xs py-2 px-3.5 rounded-xl shadow-sm inline-flex items-center gap-1.5 hover:text-purple-700"
+            title="Re-run AI architecture extraction with Gemma 4"
+          >
+            <Sparkles className={`w-3.5 h-3.5 text-purple-600 ${reanalyzing ? "animate-spin" : ""}`} />
+            {reanalyzing ? "Analyzing…" : "AI Re-analyze"}
+          </button>
+          <button
             onClick={handleBookmark}
             className={`btn-secondary text-xs py-2 px-3.5 rounded-xl shadow-sm inline-flex items-center gap-1.5 ${
               bookmarked ? "text-amber-600 font-bold" : ""
@@ -279,6 +318,24 @@ export default function RepoWorkspacePage({
           </button>
         </div>
       </div>
+
+      {reanalyzeMsg && (
+        <div
+          className={`p-3.5 rounded-2xl text-xs flex items-center justify-between border shadow-sm ${
+            reanalyzeMsg.success
+              ? "bg-emerald-50 text-emerald-800 border-emerald-200"
+              : "bg-rose-50 text-rose-800 border-rose-200"
+          }`}
+        >
+          <span className="font-medium">{reanalyzeMsg.text}</span>
+          <button
+            onClick={() => setReanalyzeMsg(null)}
+            className="font-bold ml-2 text-gray-400 hover:text-gray-700 text-sm px-1"
+          >
+            ✕
+          </button>
+        </div>
+      )}
 
       {/* Workspace Tabs */}
       <div className="flex items-center gap-1.5 overflow-x-auto pb-2 border-b border-gray-200/80">
@@ -476,14 +533,33 @@ export default function RepoWorkspacePage({
       {/* TAB 4: ISSUES & 5-FACTOR MATCHING */}
       {activeTab === "issues" && (
         <div className="space-y-4">
-          <div className="flex items-center justify-between">
-            <h2 className="text-lg font-bold text-gray-900">Recommended Issues for Beginners</h2>
-            <span className="text-xs text-gray-500 font-medium">Scored by 5 independent fit dimensions</span>
+          <div className="flex items-center justify-between flex-wrap gap-2">
+            <div>
+              <h2 className="text-lg font-bold text-gray-900">Recommended Issues for Beginners</h2>
+              <span className="text-xs text-gray-500 font-medium">Scored by 5 independent fit dimensions</span>
+            </div>
+            <button
+              onClick={handleRefreshIssues}
+              disabled={refreshingIssues}
+              id="btn-refresh-issues"
+              className="btn-secondary text-xs py-1.5 px-3 rounded-xl inline-flex items-center gap-1.5 shadow-sm hover:text-brand-700"
+            >
+              <Compass className={`w-3.5 h-3.5 text-brand-600 ${refreshingIssues ? "animate-spin" : ""}`} />
+              {refreshingIssues ? "Scanning Issues…" : "Refresh Issues"}
+            </button>
           </div>
 
           {issues.length === 0 ? (
-            <div className="card p-10 text-center text-xs text-gray-400">
-              No open issues discovered for this repository.
+            <div className="card p-10 text-center text-xs text-gray-400 space-y-3">
+              <p>No open issues discovered for this repository yet.</p>
+              <button
+                onClick={handleRefreshIssues}
+                disabled={refreshingIssues}
+                className="btn-primary text-xs py-2 px-4 rounded-xl inline-flex items-center gap-1.5 shadow-sm"
+              >
+                <Compass className={`w-3.5 h-3.5 ${refreshingIssues ? "animate-spin" : ""}`} />
+                {refreshingIssues ? "Discovering from GitHub…" : "Discover Issues Now"}
+              </button>
             </div>
           ) : (
             <div className="space-y-4">

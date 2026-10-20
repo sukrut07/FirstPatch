@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import {
@@ -17,21 +17,13 @@ import {
   Compass,
   ShieldCheck,
   CheckCircle2,
-  AlertTriangle,
   ExternalLink,
   Sparkles,
   FileCode,
-  Layers,
-  ArrowRight,
   Copy,
   Check,
   HelpCircle,
   MessageSquare,
-  Plus,
-  Terminal,
-  XCircle,
-  Network,
-  Clock,
   AlertCircle,
 } from "lucide-react";
 
@@ -70,11 +62,7 @@ export default function IssueInvestigationPage({
   const [copiedDraft, setCopiedDraft] = useState<string | null>(null);
   const [planning, setPlanning] = useState(false);
 
-  useEffect(() => {
-    loadAllData();
-  }, [owner, repo, issueNumber]);
-
-  const loadAllData = async () => {
+  const loadAllData = useCallback(async () => {
     setLoading(true);
     try {
       const [invRes, triageRes, draftsRes] = await Promise.all([
@@ -92,7 +80,11 @@ export default function IssueInvestigationPage({
     } finally {
       setLoading(false);
     }
-  };
+  }, [owner, repo, issueNumber]);
+
+  useEffect(() => {
+    loadAllData();
+  }, [loadAllData]);
 
   const handleSaveTriage = async (customDecision?: string) => {
     setSavingTriage(true);
@@ -130,6 +122,17 @@ export default function IssueInvestigationPage({
       alert("Failed to add hypothesis: " + e.message);
     } finally {
       setAddingHypo(false);
+    }
+  };
+
+  const handleUpdateHypoStatus = async (hypoId: string, status: string) => {
+    try {
+      await updateIssueHypothesisStatus(owner, repo, issueNumber, hypoId, status);
+      setHypotheses((prev) =>
+        prev.map((h) => (h.id === hypoId ? { ...h, status } : h))
+      );
+    } catch (e: any) {
+      alert("Failed to update hypothesis: " + e.message);
     }
   };
 
@@ -549,8 +552,8 @@ export default function IssueInvestigationPage({
             {/* Recorded Hypotheses */}
             <div className="space-y-2.5">
               {hypotheses.map((h: any) => (
-                <div key={h.id} className="p-3.5 rounded-2xl bg-white border border-gray-200/80 shadow-sm flex items-start justify-between gap-3 text-xs">
-                  <div className="space-y-1">
+                <div key={h.id} className="p-3.5 rounded-2xl bg-white border border-gray-200/80 shadow-sm flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-xs">
+                  <div className="space-y-1 flex-1">
                     <p className="font-bold text-gray-900">{h.hypothesis}</p>
                     {h.supporting_evidence && h.supporting_evidence.length > 0 && (
                       <p className="text-[11px] text-gray-500">
@@ -558,7 +561,33 @@ export default function IssueInvestigationPage({
                       </p>
                     )}
                   </div>
-                  <span className="badge-brand font-mono text-[10px] uppercase">{h.status}</span>
+                  <div className="flex items-center gap-1.5 shrink-0">
+                    <button
+                      onClick={() => handleUpdateHypoStatus(h.id, "verified")}
+                      className={`text-[10px] py-1 px-2.5 rounded-xl font-bold border transition-all ${
+                        h.status === "verified"
+                          ? "bg-emerald-500 text-white border-emerald-500"
+                          : "bg-surface-50 text-emerald-700 border-emerald-200 hover:bg-emerald-100"
+                      }`}
+                      title="Mark as verified by reproduction"
+                    >
+                      ✓ Verify
+                    </button>
+                    <button
+                      onClick={() => handleUpdateHypoStatus(h.id, "falsified")}
+                      className={`text-[10px] py-1 px-2.5 rounded-xl font-bold border transition-all ${
+                        h.status === "falsified"
+                          ? "bg-rose-500 text-white border-rose-500"
+                          : "bg-surface-50 text-rose-700 border-rose-200 hover:bg-rose-100"
+                      }`}
+                      title="Mark as falsified by code evidence"
+                    >
+                      ✕ Falsify
+                    </button>
+                    <span className="badge-brand font-mono text-[10px] uppercase font-bold">
+                      {h.status || "untested"}
+                    </span>
+                  </div>
                 </div>
               ))}
             </div>
